@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carnivorous Plants Collection Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.20.0/cannon.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="realistic-world.js"></script>
+    <script src="realistic-plants.js"></script>
+    <script src="in-game-store.js"></script>
+</head>
+<body>
+    <!-- Main Menu Screen -->
+    <div id="main-menu" class="screen active">
+        <div class="menu-container">
+            <header class="main-header">
+                <h1>🌿 Carnivorous Plants Collection Manager</h1>
+                <p>Grow, care for, and collect the world's most fascinating plants</p>
+            </header>
+
+            <!-- Save Game Management -->
+            <div class="save-games-section">
+                <h2>Your Collections</h2>
+                <div class="save-slots" id="save-slots">
+                    <!-- Save slots will be populated by JavaScript -->
+                </div>
+                <div class="save-controls">
+                    <button class="new-game-btn" onclick="showNewGameDialog()">
+                        🌱 Start New Collection
+                    </button>
+                    <button class="load-game-btn" onclick="showLoadGameDialog()" id="load-btn" disabled>
+                        📂 Load Collection
+                    </button>
+                </div>
+            </div>
+
+
+            <!-- Plant Growth Simulator Preview -->
+            <div class="simulator-preview">
+                <h3>🔬 Plant Growth Simulator</h3>
+                <p>Watch your plants grow in real-time with realistic care requirements</p>
+                <div class="preview-container">
+                    <div class="preview-plant" id="preview-plant">
+                        <!-- Animated preview plant -->
+                        <div class="plant-animation">
+                            <svg width="150" height="120" viewBox="0 0 150 120">
+                                <!-- Venus Flytrap Preview -->
+                                <g class="trap-preview">
+                                    <ellipse cx="60" cy="80" rx="15" ry="8" fill="#90EE90" class="lobe"/>
+                                    <ellipse cx="90" cy="80" rx="15" ry="8" fill="#FF69B4" class="lobe"/>
+                                    <line x1="50" y1="75" x2="50" y2="85" stroke="#000" stroke-width="1"/>
+                                    <line x1="100" y1="75" x2="100" y2="85" stroke="#000" stroke-width="1"/>
+                                </g>
+                                <text x="75" y="105" text-anchor="middle" fill="#666" font-size="12">Real-time growth & care</text>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="simulator-features">
+                        <ul>
+                            <li>🌡️ Temperature & humidity control</li>
+                            <li>💡 Light cycle management</li>
+                            <li>🪲 Feeding schedules</li>
+                            <li>🍂 Seasonal dormancy</li>
+                            <li>🌱 Realistic growth stages</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Info -->
+            <div class="game-info">
+                <div class="info-card">
+                    <h4>🏪 Plant Store</h4>
+                    <p>Browse and purchase realistic carnivorous plant specimens</p>
+                </div>
+                <div class="info-card">
+                    <h4>🧬 Species Database</h4>
+                    <p>Dionaea, Nepenthes, Sarracenia, Cephalotus, Darlingtonia & more</p>
+                </div>
+                <div class="info-card">
+                    <h4>📊 Collection Management</h4>
+                    <p>Track health, growth, and care requirements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Game Dialog -->
+    <div id="new-game-dialog" class="modal hidden">
+        <div class="modal-content">
+            <h2>🌱 Start New Collection</h2>
+            <div class="dialog-content">
+                <label for="collection-name">Collection Name:</label>
+                <input type="text" id="collection-name" placeholder="Enter collection name..." maxlength="20">
+                
+                <label for="starting-money">Starting Budget:</label>
+                <select id="starting-money">
+                    <option value="100">Beginner - $100</option>
+                    <option value="250" selected>Intermediate - $250</option>
+                    <option value="500">Advanced - $500</option>
+                    <option value="1000">Expert - $1,000</option>
+                </select>
+                
+                <label for="difficulty">Care Difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy">Easy - Forgiving care</option>
+                    <option value="normal" selected>Normal - Realistic care</option>
+                    <option value="hard">Hard - Expert level</option>
+                </select>
+            </div>
+            <div class="dialog-buttons">
+                <button onclick="createNewGame()" class="primary-btn">Create Collection</button>
+                <button onclick="closeNewGameDialog()" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Game Dialog -->
+    <div id="load-game-dialog" class="modal hidden">
+        <div class="modal-content">
+            <h2>📂 Load Collection</h2>
+            <div class="load-game-list" id="load-game-list">
+                <!-- Load game options populated by JavaScript -->
+            </div>
+            <div class="dialog-buttons">
+                <button onclick="closeLoadGameDialog()" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden">
+        <div class="game-interface">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="collection-info">
+                    <h2 id="collection-title">My Collection</h2>
+                    <span id="last-saved">Last saved: Never</span>
+                </div>
+                <div class="top-controls">
+                    <div class="money-display">💰 $<span id="money-amount">250.00</span></div>
+                    <div class="coins-display">🪙 <span id="coins-amount">0</span> Coins</div>
+                    <button onclick="toggleFullscreen()" class="fullscreen-btn">🔳 Fullscreen</button>
+                    <button onclick="saveGame()" class="save-btn">💾 Save</button>
+                    <button onclick="showMainMenuGlobal()" class="menu-btn">🏠 Main Menu</button>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <!-- Left Sidebar - Plant Collection -->
+                <div class="plant-collection-panel">
+                    <h3>🌿 Your Plants</h3>
+                    <div class="plant-list" id="plant-list">
+                        <div class="empty-collection">
+                            <p>No plants yet!</p>
+                            <button onclick="openStore()" class="add-plant-btn">
+                                🛒 Visit Plant Store
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center - 3D Environment -->
+                <div class="simulator-panel">
+                    <div class="simulator-header">
+                        <h3>🌿 3D Plant Environment</h3>
+                        <div class="simulator-controls">
+                            <div class="movement-instructions">
+                                <span>WASD to move • Mouse to look • Click to interact</span>
+                            </div>
+                            <div class="environment-info">
+                                <span id="current-location">Greenhouse</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="simulator-display" id="simulator-display">
+                        <canvas id="three-canvas"></canvas>
+                        <div class="crosshair"></div>
+                        <div class="game-fullscreen-btn" id="game-fullscreen-btn" onclick="fullscreenGameWindow()">
+                            ⛶
+                        </div>
+                        <div class="interaction-prompt" id="interaction-prompt" style="display: none;">
+                            Press E to interact
+                        </div>
+                        <div class="tutorial-overlay" id="tutorial-overlay" style="display: block;">
+                            <div class="tutorial-content">
+                                <div class="tutorial-header">
+                                    <h3>🌿 Welcome to Carnivorous Plant Paradise!</h3>
+                                    <div class="exit-instruction">
+                                        <strong>📌 Press "D" to close this menu and start playing!</strong>
+                                    </div>
+                                </div>
+                                <div class="tutorial-scrollable">
+                                    <div class="tutorial-message" id="tutorial-message">
+                                        <h4>Getting Started</h4>
+                                        <p>You're standing in your empty greenhouse! Time to start your carnivorous plant collection.</p>
+                                        <p><strong>First step:</strong> Go outside and visit the stores to buy some carnivorous plants!</p>
+                                        
+                                        <h4>🎮 Movement Controls</h4>
+                                        <div class="control-list">
+                                            <p><strong>WASD or Arrow Keys</strong> - Move forward/back/left/right</p>
+                                            <p><strong>Mouse</strong> - Look around (after clicking in game window)</p>
+                                            <p><strong>Space</strong> - Jump</p>
+                                            <p><strong>Click</strong> - Enter mouse look mode</p>
+                                            <p><strong>Escape</strong> - Exit mouse look mode</p>
+                                        </div>
+                                        
+                                        <h4>🤝 Interaction Controls</h4>
+                                        <div class="control-list">
+                                            <p><strong>E</strong> - Enter stores, talk to NPCs, use teleports</p>
+                                            <p><strong>G</strong> - Grab/pick up plants, use items</p>
+                                            <p><strong>H</strong> - Show help menu</p>
+                                        </div>
+                                        
+                                        <h4>🛒 Shopping Instructions</h4>
+                                        <div class="control-list">
+                                            <p>1. Walk outside your greenhouse</p>
+                                            <p>2. Find the Plant Store building</p>
+                                            <p>3. Press <strong>E</strong> to enter the store</p>
+                                            <p>4. Walk up to plants and press <strong>G</strong> to examine them</p>
+                                            <p>5. Go to checkout counter and press <strong>G</strong> to buy</p>
+                                        </div>
+                                        
+                                        <h4>💰 Auto-Earning System</h4>
+                                        <div class="control-list">
+                                            <p>• You earn $0.01 every 0.1 seconds automatically!</p>
+                                            <p>• You earn 1 coin every 10 seconds for special services</p>
+                                            <p>• Visit the bank to manage your money</p>
+                                        </div>
+                                        
+                                        <h4>🏪 Available Stores</h4>
+                                        <div class="control-list">
+                                            <p>• Plant Store - Buy carnivorous plants</p>
+                                            <p>• Bank - Manage your finances</p>
+                                            <p>• Electronics Store - Climate control equipment</p>
+                                            <p>• Emergency Store - Safety equipment</p>
+                                            <p>• And 5 more specialized stores!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tutorial-footer-fixed">
+                                    <strong>🚀 Press "D" key to close this menu and start exploring!</strong>
+                                    <br><br>
+                                    <button onclick="closeTutorialManually()" style="background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px;">
+                                        Or Click Here to Close Tutorial
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="simulator-stats" id="simulator-stats">
+                        <div class="stats-panel">
+                            <h4>Environment Status</h4>
+                            <div class="stat-item">Temperature: <span id="env-temp">22°C</span></div>
+                            <div class="stat-item">Humidity: <span id="env-humidity">65%</span></div>
+                            <div class="stat-item">Light: <span id="env-light">Bright</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar - Plant Information -->
+                <div class="care-controls-panel">
+                    <h3>🌿 Plant Information</h3>
+                    <div class="control-groups" id="care-controls">
+                        <div class="control-group">
+                            <h4>Current Plant</h4>
+                            <div id="selected-plant-info">
+                                <p>Walk near a plant to see its information</p>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <h4>Available Actions</h4>
+                            <div id="available-actions">
+                                <p>Approach plants or interactive objects to see available actions</p>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <h4>Time & Day Cycle</h4>
+                            <div class="time-display">
+                                <span id="current-time">Day 1 - 8:00 AM</span>
+                            </div>
+                            <div class="day-cycle">
+                                <span id="sun-position">☀️ Midday Sun</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
