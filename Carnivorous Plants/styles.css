@@ -657,8 +657,12 @@ body {
     width: 100%;
     height: 100%;
     display: block;
-    cursor: none;
+    cursor: crosshair;
     overflow: hidden;
+}
+
+#three-canvas.mouse-locked {
+    cursor: none;
 }
 
 .simulator-panel {
@@ -794,7 +798,7 @@ body:not(.game-active) {
     border-radius: 20px;
     padding: 20px;
     max-width: 800px;
-    max-height: 90vh;
+    max-height: 85vh;
     box-shadow: 0 25px 80px rgba(0,0,0,0.4);
     border: 3px solid #4a7c59;
     display: flex;
@@ -818,7 +822,7 @@ body:not(.game-active) {
 
 .tutorial-scrollable {
     overflow-y: auto;
-    max-height: 60vh;
+    max-height: 50vh;
     padding-right: 10px;
     margin-bottom: 20px;
 }
@@ -850,12 +854,14 @@ body:not(.game-active) {
 .tutorial-footer-fixed {
     background: #007bff;
     color: white;
-    padding: 15px;
+    padding: 20px;
     border-radius: 10px;
     text-align: center;
-    font-size: 1.3em;
+    font-size: 1.2em;
     margin-top: auto;
     animation: pulse 2s infinite;
+    flex-shrink: 0;
+    border: 3px solid #0056b3;
 }
 
 .tutorial-content h3 {

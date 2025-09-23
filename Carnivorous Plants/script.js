@@ -42,7 +42,7 @@ class PlantCollectionManager3D {
         this.earningRate = 0.01; // 1 cent every 0.1 seconds
         
         // Tutorial system
-        this.tutorialActive = true;
+        this.tutorialActive = false; // Start with tutorial disabled for testing
         this.tutorialStep = 0;
         this.hasVisitedStore = false;
         this.hasThermostat = false;
@@ -96,8 +96,14 @@ class PlantCollectionManager3D {
         });
         
         document.addEventListener('click', (e) => {
+            console.log('Click event:', e.target, 'currentScreen:', this.currentScreen);
             if (this.currentScreen === 'game-screen' && this.controls) {
-                this.controls.lock();
+                const canvas = document.getElementById('three-canvas');
+                console.log('Canvas found:', canvas, 'target matches:', e.target === canvas);
+                if (e.target === canvas || canvas.contains(e.target)) {
+                    console.log('Requesting pointer lock...');
+                    this.controls.lock();
+                }
             }
         });
     }
@@ -123,7 +129,8 @@ class PlantCollectionManager3D {
         
         // Camera setup (human eye height)
         this.camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-        this.camera.position.set(0, 1.75, 3); // Average human eye height
+        this.camera.position.set(2, 1.75, 1); // Inside greenhouse, looking at plant stations
+        this.camera.lookAt(-5, 1.5, -2); // Look toward the tiered plant benches
         
         // Renderer setup with realistic settings
         this.renderer = new THREE.WebGLRenderer({ 
@@ -141,8 +148,27 @@ class PlantCollectionManager3D {
         this.renderer.toneMappingExposure = 1.0;
         
         // First-person controls
-        this.controls = new THREE.PointerLockControls(this.camera, document.body);
+        this.controls = new THREE.PointerLockControls(this.camera, canvas);
         this.scene.add(this.controls.getObject());
+        
+        // Handle pointer lock events
+        this.controls.addEventListener('lock', () => {
+            console.log('✅ Pointer locked successfully!');
+            const canvas = document.getElementById('three-canvas');
+            if (canvas) {
+                canvas.classList.add('mouse-locked');
+                console.log('✅ Mouse-locked class added to canvas');
+            }
+        });
+        
+        this.controls.addEventListener('unlock', () => {
+            console.log('❌ Pointer unlocked');
+            const canvas = document.getElementById('three-canvas');
+            if (canvas) {
+                canvas.classList.remove('mouse-locked');
+                console.log('❌ Mouse-locked class removed from canvas');
+            }
+        });
         
         // Player physics body
         this.setupPlayerPhysics();
@@ -215,7 +241,7 @@ class PlantCollectionManager3D {
         const playerShape = new CANNON.Cylinder(0.5, 0.5, 1.8, 8);
         this.playerBody = new CANNON.Body({ mass: 70 }); // Average human weight
         this.playerBody.addShape(playerShape);
-        this.playerBody.position.set(0, 1, 3);
+        this.playerBody.position.set(2, 1, 1); // Inside greenhouse, near center table
         this.playerBody.material = this.worldPhysics.materials.ground;
         this.worldPhysics.world.add(this.playerBody);
         
@@ -448,89 +474,372 @@ class PlantCollectionManager3D {
     }
     
     createEmptyGreenhouse() {
-        // Glass greenhouse walls
-        const wallMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0xffffff, 
-            transparent: true, 
-            opacity: 0.4 
+        console.log('🏡 Creating detailed greenhouse interior...');
+        
+        // FLOOR - Concrete greenhouse floor with drainage
+        const floorGeometry = new THREE.PlaneGeometry(20, 16);
+        const floorMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0x8a8a8a,
+            roughness: 0.8
         });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = 0;
+        floor.receiveShadow = true;
+        this.scene.add(floor);
+        
+        // GLASS WALLS with frame structure
+        const glassMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0xe8f4fd, 
+            transparent: true, 
+            opacity: 0.3
+        });
+        const frameMaterial = new THREE.MeshLambertMaterial({ color: 0x2d5016 });
         
         // Back wall
-        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 6), wallMaterial);
-        backWall.position.set(0, 3, -8);
+        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), glassMaterial);
+        backWall.position.set(0, 4, -8);
         this.scene.add(backWall);
         
-        // Side walls
-        const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 6), wallMaterial);
-        leftWall.position.set(-8, 3, 0);
+        // Side walls  
+        const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), glassMaterial);
+        leftWall.position.set(-10, 4, 0);
         leftWall.rotation.y = Math.PI / 2;
         this.scene.add(leftWall);
         
-        const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 6), wallMaterial);
-        rightWall.position.set(8, 3, 0);
+        const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), glassMaterial);
+        rightWall.position.set(10, 4, 0);
         rightWall.rotation.y = -Math.PI / 2;
         this.scene.add(rightWall);
         
-        // Front entrance (partial wall with door opening)
-        const frontWallLeft = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), wallMaterial);
-        frontWallLeft.position.set(-5, 3, 8);
+        // Front walls with entrance
+        const frontWallLeft = new THREE.Mesh(new THREE.PlaneGeometry(7, 8), glassMaterial);
+        frontWallLeft.position.set(-6.5, 4, 8);
         this.scene.add(frontWallLeft);
         
-        const frontWallRight = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), wallMaterial);
-        frontWallRight.position.set(5, 3, 8);
+        const frontWallRight = new THREE.Mesh(new THREE.PlaneGeometry(7, 8), glassMaterial);
+        frontWallRight.position.set(6.5, 4, 8);
         this.scene.add(frontWallRight);
         
-        // Roof structure
-        const roofGeometry = new THREE.ConeGeometry(12, 4, 4);
+        // GLASS ROOF with supporting beams
         const roofMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0x654321, 
+            color: 0xe8f4fd, 
             transparent: true, 
-            opacity: 0.8 
+            opacity: 0.2
         });
-        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-        roof.position.set(0, 8, 0);
-        roof.rotation.y = Math.PI / 4;
-        this.scene.add(roof);
         
-        // Empty plant benches (for later use)
-        this.createEmptyPlantBenches();
+        // Multiple roof panels
+        for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 3; j++) {
+                const roofPanel = new THREE.Mesh(new THREE.PlaneGeometry(5, 5.3), roofMaterial);
+                roofPanel.rotation.x = -Math.PI / 2;
+                roofPanel.position.set(-7.5 + i * 5, 8, -6 + j * 5.3);
+                this.scene.add(roofPanel);
+            }
+        }
         
-        // Greenhouse door
+        // Supporting frame beams
+        this.createGreenhouseFrame();
+        
+        // PLANT STATIONS and detailed interior
+        this.createDetailedPlantStations();
+        
+        // GREENHOUSE EQUIPMENT
+        this.createGreenhouseEquipment();
+        
+        // LIGHTING SYSTEM
+        this.createGreenhouseLighting();
+        
+        // ENTRANCE DOOR
         this.createGreenhouseDoor();
     }
     
-    createEmptyPlantBenches() {
-        const benchMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    createDetailedPlantStations() {
+        console.log('🌿 Creating detailed plant stations...');
         
-        // Left bench (empty)
-        const leftBench = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 6), benchMaterial);
-        leftBench.position.set(-5, 1, 0);
-        leftBench.castShadow = true;
-        this.scene.add(leftBench);
+        const benchMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
+        const metalMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
         
-        // Right bench (empty)
-        const rightBench = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 6), benchMaterial);
-        rightBench.position.set(5, 1, 0);
-        rightBench.castShadow = true;
-        this.scene.add(rightBench);
+        // LEFT SIDE - Tiered plant benches
+        for (let tier = 0; tier < 3; tier++) {
+            const bench = new THREE.Mesh(
+                new THREE.BoxGeometry(18, 0.3, 2.5), 
+                benchMaterial
+            );
+            bench.position.set(-8.5, 0.8 + tier * 1.2, -5 + tier * 2);
+            bench.castShadow = true;
+            this.scene.add(bench);
+            
+            // Metal support legs
+            for (let i = 0; i < 4; i++) {
+                const leg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.1, 0.8 + tier * 1.2),
+                    metalMaterial
+                );
+                leg.position.set(
+                    -8.5 + (-7 + i * 4.7),
+                    (0.8 + tier * 1.2) / 2,
+                    -5 + tier * 2
+                );
+                this.scene.add(leg);
+            }
+        }
         
-        // Central table (empty)
-        const centralTable = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 2), benchMaterial);
-        centralTable.position.set(0, 1, -5);
-        centralTable.castShadow = true;
-        this.scene.add(centralTable);
+        // RIGHT SIDE - Standard benches with storage underneath
+        for (let i = 0; i < 3; i++) {
+            const bench = new THREE.Mesh(
+                new THREE.BoxGeometry(16, 0.3, 2), 
+                benchMaterial
+            );
+            bench.position.set(7.5, 0.9, -4 + i * 3);
+            bench.castShadow = true;
+            this.scene.add(bench);
+            
+            // Storage shelves underneath
+            const shelf = new THREE.Mesh(
+                new THREE.BoxGeometry(15, 0.2, 1.5), 
+                benchMaterial
+            );
+            shelf.position.set(7.5, 0.4, -4 + i * 3);
+            this.scene.add(shelf);
+        }
+        
+        // CENTER - Main potting table with tools
+        const pottingTable = new THREE.Mesh(
+            new THREE.BoxGeometry(6, 0.4, 3), 
+            new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+        );
+        pottingTable.position.set(0, 0.9, 4);
+        pottingTable.castShadow = true;
+        this.scene.add(pottingTable);
+        
+        // Add some plant pots and tools on tables
+        this.addPottingSupplies();
     }
     
     createGreenhouseDoor() {
-        // Simple door frame
         const doorFrameMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
-        const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.2, 6, 0.2), doorFrameMaterial);
-        doorFrame.position.set(-2, 3, 8);
+        const glassMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0xe8f4fd, 
+            transparent: true, 
+            opacity: 0.6
+        });
+        
+        // Door frame
+        const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(4, 7, 0.3), doorFrameMaterial);
+        doorFrame.position.set(0, 3.5, 8.1);
         this.scene.add(doorFrame);
         
-        const doorFrame2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 6, 0.2), doorFrameMaterial);
-        doorFrame2.position.set(2, 3, 8);
-        this.scene.add(doorFrame2);
+        // Glass door panels
+        const leftDoor = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 6), glassMaterial);
+        leftDoor.position.set(-0.9, 3.5, 8.05);
+        this.scene.add(leftDoor);
+        
+        const rightDoor = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 6), glassMaterial);
+        rightDoor.position.set(0.9, 3.5, 8.05);
+        this.scene.add(rightDoor);
+        
+        // Door handles
+        const handleMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
+        const leftHandle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.05, 0.3),
+            handleMaterial
+        );
+        leftHandle.rotation.z = Math.PI / 2;
+        leftHandle.position.set(-0.5, 3.5, 8.2);
+        this.scene.add(leftHandle);
+        
+        const rightHandle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.05, 0.3),
+            handleMaterial
+        );
+        rightHandle.rotation.z = Math.PI / 2;
+        rightHandle.position.set(0.5, 3.5, 8.2);
+        this.scene.add(rightHandle);
+    }
+    
+    createGreenhouseFrame() {
+        console.log('🏭 Creating greenhouse frame structure...');
+        const frameMaterial = new THREE.MeshLambertMaterial({ color: 0x2d5016 });
+        
+        // Vertical corner posts
+        const cornerPositions = [
+            [-10, 4, -8], [10, 4, -8], [-10, 4, 8], [10, 4, 8]
+        ];
+        
+        cornerPositions.forEach(pos => {
+            const post = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 8, 0.3),
+                frameMaterial
+            );
+            post.position.set(pos[0], pos[1], pos[2]);
+            post.castShadow = true;
+            this.scene.add(post);
+        });
+        
+        // Horizontal roof beams
+        for (let i = 0; i <= 4; i++) {
+            const beam = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.3, 16),
+                frameMaterial
+            );
+            beam.position.set(-8 + i * 4, 8, 0);
+            this.scene.add(beam);
+        }
+        
+        for (let j = 0; j <= 3; j++) {
+            const beam = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 0.3, 0.2),
+                frameMaterial
+            );
+            beam.position.set(0, 8, -6 + j * 4);
+            this.scene.add(beam);
+        }
+    }
+    
+    createGreenhouseEquipment() {
+        console.log('🔧 Adding greenhouse equipment...');
+        
+        // Thermometer on wall
+        const thermometer = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 0.8, 0.05),
+            new THREE.MeshLambertMaterial({ color: 0xffffff })
+        );
+        thermometer.position.set(-9.8, 2, -2);
+        this.scene.add(thermometer);
+        
+        // Watering can
+        const wateringCan = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.4, 0.6),
+            new THREE.MeshLambertMaterial({ color: 0x228B22 })
+        );
+        wateringCan.position.set(2, 1.2, 4);
+        this.scene.add(wateringCan);
+        
+        // Misting system pipes
+        for (let i = 0; i < 5; i++) {
+            const pipe = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05, 0.05, 16),
+                new THREE.MeshLambertMaterial({ color: 0x444444 })
+            );
+            pipe.rotation.z = Math.PI / 2;
+            pipe.position.set(0, 7, -6 + i * 3);
+            this.scene.add(pipe);
+            
+            // Misting nozzles
+            for (let j = 0; j < 4; j++) {
+                const nozzle = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.03),
+                    new THREE.MeshLambertMaterial({ color: 0x666666 })
+                );
+                nozzle.position.set(-6 + j * 4, 7, -6 + i * 3);
+                this.scene.add(nozzle);
+            }
+        }
+        
+        // Fans for air circulation
+        const fan = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.8, 0.8, 0.2),
+            new THREE.MeshLambertMaterial({ color: 0x333333 })
+        );
+        fan.position.set(0, 6, -7.5);
+        this.scene.add(fan);
+    }
+    
+    createGreenhouseLighting() {
+        console.log('💡 Installing greenhouse lighting...');
+        
+        // Hanging grow lights
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 2; j++) {
+                const lightFixture = new THREE.Mesh(
+                    new THREE.BoxGeometry(2, 0.3, 1),
+                    new THREE.MeshLambertMaterial({ color: 0xffffff })
+                );
+                lightFixture.position.set(-4 + j * 8, 6, -4 + i * 4);
+                this.scene.add(lightFixture);
+                
+                // LED strips
+                const ledStrip = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8, 0.1, 0.8),
+                    new THREE.MeshBasicMaterial({ color: 0xff00ff })
+                );
+                ledStrip.position.set(-4 + j * 8, 5.8, -4 + i * 4);
+                this.scene.add(ledStrip);
+                
+                // Hanging chains
+                const chain = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.02, 0.02, 2),
+                    new THREE.MeshLambertMaterial({ color: 0x444444 })
+                );
+                chain.position.set(-4 + j * 8, 7, -4 + i * 4);
+                this.scene.add(chain);
+            }
+        }
+    }
+    
+    addPottingSupplies() {
+        console.log('🩴 Adding potting supplies and tools...');
+        
+        // Terra cotta pots of various sizes
+        const potSizes = [0.15, 0.2, 0.25, 0.3];
+        const potMaterial = new THREE.MeshLambertMaterial({ color: 0xcd853f });
+        
+        for (let i = 0; i < 12; i++) {
+            const size = potSizes[Math.floor(Math.random() * potSizes.length)];
+            const pot = new THREE.Mesh(
+                new THREE.CylinderGeometry(size, size * 0.8, size * 1.2),
+                potMaterial
+            );
+            
+            // Randomly place on benches
+            const benchChoice = Math.floor(Math.random() * 3);
+            let x, z;
+            if (benchChoice === 0) { // Left tiered benches
+                x = -8.5 + (Math.random() - 0.5) * 16;
+                z = -5 + Math.floor(Math.random() * 3) * 2;
+            } else if (benchChoice === 1) { // Right benches
+                x = 7.5 + (Math.random() - 0.5) * 14;
+                z = -4 + Math.floor(Math.random() * 3) * 3;
+            } else { // Center table
+                x = (Math.random() - 0.5) * 5;
+                z = 4 + (Math.random() - 0.5) * 2;
+            }
+            
+            pot.position.set(x, 1.1 + size * 0.6, z);
+            pot.castShadow = true;
+            this.scene.add(pot);
+        }
+        
+        // Gardening tools
+        const toolMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+        
+        // Trowel
+        const trowel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.4, 0.1),
+            toolMaterial
+        );
+        trowel.position.set(1.5, 1.2, 4.5);
+        trowel.rotation.z = Math.PI / 6;
+        this.scene.add(trowel);
+        
+        // Pruning shears
+        const shears = new THREE.Mesh(
+            new THREE.BoxGeometry(0.03, 0.3, 0.03),
+            new THREE.MeshLambertMaterial({ color: 0x444444 })
+        );
+        shears.position.set(-1.2, 1.2, 4.2);
+        this.scene.add(shears);
+        
+        // Bags of soil
+        for (let i = 0; i < 3; i++) {
+            const soilBag = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 0.6, 0.4),
+                new THREE.MeshLambertMaterial({ color: 0x654321 })
+            );
+            soilBag.position.set(7.5 + (i - 1) * 1.2, 0.6, 1);
+            this.scene.add(soilBag);
+        }
     }
     
     createRoadSystem() {
@@ -1187,7 +1496,6 @@ class PlantCollectionManager3D {
                 this.moveBackward = true;
                 break;
             case 'ArrowRight':
-            case 'KeyD':
                 this.moveRight = true;
                 break;
             case 'Space':
@@ -1238,6 +1546,8 @@ class PlantCollectionManager3D {
                 this.moveBackward = false;
                 break;
             case 'ArrowRight':
+                this.moveRight = false;
+                break;
             case 'KeyD':
                 if (!this.tutorialActive) {
                     this.moveRight = false;
@@ -1248,12 +1558,26 @@ class PlantCollectionManager3D {
     
     // Realistic Animation Loop with Physics
     animate() {
-        if (!this.renderer || !this.scene || !this.camera) return;
+        if (!this.renderer || !this.scene || !this.camera) {
+            console.log('⚠️ Animate loop stopped - missing:', {
+                renderer: !!this.renderer,
+                scene: !!this.scene,
+                camera: !!this.camera
+            });
+            return;
+        }
         
         requestAnimationFrame(() => this.animate());
         
         const deltaTime = this.clock.getDelta();
         const currentTime = performance.now();
+        
+        // Log first few frames to confirm animation is running
+        if (!this.animateLogCount) this.animateLogCount = 0;
+        if (this.animateLogCount < 3) {
+            console.log('✅ Animation loop running, frame:', this.animateLogCount);
+            this.animateLogCount++;
+        }
         
         // Calculate FPS
         if (currentTime - this.lastTime >= 1000) {
@@ -1297,6 +1621,18 @@ class PlantCollectionManager3D {
         const moveSpeed = 5.0; // m/s
         const jumpForce = 300;
         
+        // Debug movement state
+        const anyMovement = this.moveForward || this.moveBackward || this.moveLeft || this.moveRight;
+        if (anyMovement) {
+            console.log('➡️ Movement detected:', {
+                forward: this.moveForward,
+                backward: this.moveBackward, 
+                left: this.moveLeft,
+                right: this.moveRight,
+                isLocked: this.controls.isLocked
+            });
+        }
+        
         // Check if player is on ground
         this.isGrounded = Math.abs(this.playerBody.velocity.y) < 0.1;
         
@@ -1319,6 +1655,18 @@ class PlantCollectionManager3D {
         // Apply movement to physics body
         this.playerBody.velocity.x = direction.x * moveSpeed;
         this.playerBody.velocity.z = direction.z * moveSpeed;
+        
+        if (anyMovement) {
+            console.log('➡️ Applied velocity:', {
+                x: this.playerBody.velocity.x,
+                z: this.playerBody.velocity.z,
+                position: {
+                    x: this.playerBody.position.x,
+                    y: this.playerBody.position.y,
+                    z: this.playerBody.position.z
+                }
+            });
+        }
         
         // Jumping (only when grounded)
         if (this.canJump && this.isGrounded) {
@@ -2441,43 +2789,782 @@ function fullscreenGameWindow() {
 }
 
 function startQuickGame() {
-    console.log('Starting quick game...');
+    // Use the working game function
+    startWorkingGame();
+}
+
+// Working 3D Game with all controls
+function startWorkingGame() {
+    console.log('🎮 Starting enhanced 3D game...');
     
-    // Make sure game is initialized
-    if (!window.game) {
-        console.log('Game not initialized, creating now...');
-        window.game = new PlantCollectionManager3D();
+    try {
+        // Show game screen
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        document.getElementById('game-screen').style.display = 'block';
+        
+        // Close tutorial
+        const tutorial = document.getElementById('tutorial-overlay');
+        if (tutorial) tutorial.style.display = 'none';
+        
+        // Create complete 3D scene
+        const canvas = document.getElementById('three-canvas');
+        
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
+        
+        const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        camera.position.set(0, 1.75, 3);
+        
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Setup physics world
+        const physicsWorld = setupPhysicsWorld();
+        
+        // Enhanced lighting system
+        setupEnhancedLighting(scene);
+        
+        // Create detailed greenhouse interior
+        createDetailedGreenhouseInterior(scene, physicsWorld);
+        
+        // Setup enhanced controls with all features
+        setupEnhancedControls(scene, camera, canvas, renderer, physicsWorld);
+        
+        console.log('✅ Enhanced 3D game started! Click screen to lock mouse, use WASD/Shift/C/G/Q');
+        
+    } catch (error) {
+        console.error('❌ Enhanced game failed:', error);
     }
+}
+
+function setupPhysicsWorld() {
+    console.log('🔬 Setting up physics world...');
     
-    // Create a quick game with default settings
-    const defaultGameData = {
-        collectionName: 'Quick Start Collection',
-        money: 250,
-        plants: [],
-        environment: {
-            temperature: 22,
-            humidity: 65,
-            lightLevel: 'bright'
+    // Create physics world
+    const world = new CANNON.World();
+    world.gravity.set(0, -9.82, 0); // Earth gravity
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10;
+    
+    // Materials
+    const groundMaterial = new CANNON.Material({ friction: 0.4, restitution: 0.3 });
+    const potMaterial = new CANNON.Material({ friction: 0.6, restitution: 0.4 });
+    const tableMaterial = new CANNON.Material({ friction: 0.8, restitution: 0.1 });
+    
+    // Contact materials
+    world.addContactMaterial(new CANNON.ContactMaterial(
+        groundMaterial, potMaterial,
+        { friction: 0.4, restitution: 0.3 }
+    ));
+    
+    // Ground plane
+    const groundShape = new CANNON.Plane();
+    const groundBody = new CANNON.Body({ mass: 0 });
+    groundBody.addShape(groundShape);
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    world.add(groundBody);
+    
+    // Dynamic objects tracking
+    const dynamicObjects = [];
+    
+    // Physics world wrapper with helper functions
+    const physicsWorld = {
+        world,
+        materials: { 
+            ground: groundMaterial, 
+            plastic: potMaterial, 
+            wood: tableMaterial 
         },
-        difficulty: 'normal',
-        lastSaved: Date.now(),
-        slotIndex: 0
+        dynamicObjects,
+        
+        // Add dynamic object to physics world
+        addDynamicObject(mesh, body, type) {
+            this.dynamicObjects.push({ mesh, body, type });
+            return { mesh, body, type };
+        },
+        
+        // Step physics simulation
+        step(deltaTime) {
+            this.world.step(deltaTime);
+            
+            // Sync all dynamic objects
+            this.dynamicObjects.forEach(obj => {
+                if (obj.mesh && obj.body) {
+                    obj.mesh.position.copy(obj.body.position);
+                    obj.mesh.quaternion.copy(obj.body.quaternion);
+                }
+            });
+        }
     };
     
-    window.game.gameData = defaultGameData;
-    window.game.playerInventory.money = defaultGameData.money;
-    window.game.lastEarningTime = Date.now(); // Start auto-earning immediately
-    
-    console.log('Switching to game screen...');
-    window.game.showScreen('game-screen');
-    
-    // Initialize 3D world
-    console.log('Initializing 3D environment...');
-    setTimeout(() => {
-        if (!window.game.scene) {
-            window.game.init3DEnvironment();
+    // Add collision event listener for knockdown effects
+    world.addEventListener('beginContact', function(event) {
+        const bodyA = event.bodyA;
+        const bodyB = event.bodyB;
+        
+        // Check if player collided with a dynamic object
+        if (bodyA.mass === 80 || bodyB.mass === 80) { // Player body mass
+            const otherBody = bodyA.mass === 80 ? bodyB : bodyA;
+            
+            // If the other body is a pot, knock it over
+            if (otherBody.mass > 0 && otherBody.mass < 10) { // Light objects like pots
+                console.log('💥 Player knocked into object!');
+                
+                // Apply knockdown force
+                const force = new CANNON.Vec3(
+                    (Math.random() - 0.5) * 50,
+                    10,
+                    (Math.random() - 0.5) * 50
+                );
+                otherBody.applyImpulse(force, otherBody.position);
+            }
         }
-    }, 100);
+    });
+    
+    console.log('✅ Physics world setup complete with collision detection');
+    return physicsWorld;
+}
+
+function setupEnhancedLighting(scene) {
+    // Ambient light
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    scene.add(ambientLight);
+    
+    // Directional light (sun)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 50;
+    scene.add(directionalLight);
+    
+    // Interior grow lights
+    for (let i = 0; i < 3; i++) {
+        const growLight = new THREE.PointLight(0xff00ff, 0.4, 10);
+        growLight.position.set(-4 + i * 4, 5, -2);
+        growLight.castShadow = true;
+        scene.add(growLight);
+    }
+    
+    // Warm ambient greenhouse lighting
+    const warmLight = new THREE.PointLight(0xffddaa, 0.3, 15);
+    warmLight.position.set(0, 6, 0);
+    scene.add(warmLight);
+}
+
+function createDetailedGreenhouseInterior(scene, physicsWorld) {
+    console.log('🏠 Creating enhanced greenhouse interior...');
+    
+    // Floor with texture variation
+    const floorGeometry = new THREE.PlaneGeometry(20, 20);
+    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x567d46 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    
+    // Concrete pathways
+    const pathMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
+    const mainPath = new THREE.Mesh(new THREE.PlaneGeometry(2, 16), pathMaterial);
+    mainPath.rotation.x = -Math.PI / 2;
+    mainPath.position.set(0, 0.01, 0);
+    scene.add(mainPath);
+    
+    // Glass greenhouse walls with frame
+    const glassMaterial = new THREE.MeshLambertMaterial({ 
+        color: 0xccffcc, 
+        transparent: true, 
+        opacity: 0.3 
+    });
+    
+    const frameMaterial = new THREE.MeshLambertMaterial({ color: 0x2d5016 });
+    
+    // Back wall with frame
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), glassMaterial);
+    backWall.position.set(0, 4, -10);
+    scene.add(backWall);
+    
+    // Frame posts
+    for (let i = 0; i <= 4; i++) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 8, 0.2), frameMaterial);
+        post.position.set(-8 + i * 4, 4, -10);
+        post.castShadow = true;
+        scene.add(post);
+    }
+    
+    // Side walls
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), glassMaterial);
+    leftWall.position.set(-10, 4, 0);
+    leftWall.rotation.y = Math.PI / 2;
+    scene.add(leftWall);
+    
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), glassMaterial);
+    rightWall.position.set(10, 4, 0);
+    rightWall.rotation.y = -Math.PI / 2;
+    scene.add(rightWall);
+    
+    // Detailed plant stations with physics
+    createEnhancedPlantStations(scene, physicsWorld);
+    
+    // Add interactive objects with physics
+    addInteractiveObjects(scene, physicsWorld);
+    
+    // Invisible boundary walls
+    addInvisibleBoundaries(scene);
+}
+
+function createEnhancedPlantStations(scene, physicsWorld) {
+    const benchMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    
+    // Tiered plant benches (left side)
+    for (let tier = 0; tier < 3; tier++) {
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(16, 0.3, 2), benchMaterial);
+        bench.position.set(-6, 0.9 + tier * 0.5, -6 + tier * 2);
+        bench.castShadow = true;
+        bench.receiveShadow = true;
+        scene.add(bench);
+        
+        // Support legs
+        for (let i = 0; i < 3; i++) {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9 + tier * 0.5), benchMaterial);
+            leg.position.set(-6 + (-6 + i * 6), (0.9 + tier * 0.5) / 2, -6 + tier * 2);
+            scene.add(leg);
+        }
+    }
+    
+    // Standard benches (right side)
+    for (let i = 0; i < 3; i++) {
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(14, 0.3, 2), benchMaterial);
+        bench.position.set(6, 0.9, -5 + i * 3);
+        bench.castShadow = true;
+        bench.receiveShadow = true;
+        scene.add(bench);
+        
+        // Shelf underneath
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(13, 0.2, 1.5), benchMaterial);
+        shelf.position.set(6, 0.4, -5 + i * 3);
+        scene.add(shelf);
+    }
+    
+    // Central potting table (climbable)
+    const pottingTable = new THREE.Mesh(new THREE.BoxGeometry(6, 0.4, 3), benchMaterial);
+    pottingTable.position.set(0, 0.9, 5);
+    pottingTable.castShadow = true;
+    pottingTable.receiveShadow = true;
+    
+    // Create physics body for table (static - can be climbed on)
+    const tableShape = new CANNON.Box(new CANNON.Vec3(3, 0.2, 1.5));
+    const tableBody = new CANNON.Body({ mass: 0 }); // Static body - won't move
+    tableBody.addShape(tableShape);
+    tableBody.position.set(0, 0.9, 5);
+    tableBody.material = physicsWorld.materials.wood;
+    physicsWorld.world.addBody(tableBody);
+    
+    pottingTable.userData = { 
+        type: 'table', 
+        climbable: true, 
+        physicsBody: tableBody 
+    };
+    scene.add(pottingTable);
+    
+    console.log('📋 Added climbable potting table with physics');
+}
+
+function addInteractiveObjects(scene, physicsWorld) {
+    // Enhanced plant pots with more variety
+    const potTypes = [
+        { color: 0xff4444, size: 0.2, type: 'terra_cotta' },
+        { color: 0x44ff44, size: 0.25, type: 'ceramic' },
+        { color: 0x4444ff, size: 0.18, type: 'plastic' },
+        { color: 0xffff44, size: 0.22, type: 'glazed' },
+        { color: 0xff44ff, size: 0.3, type: 'decorative' },
+        { color: 0x44ffff, size: 0.15, type: 'seedling' }
+    ];
+    
+    // Place pots on benches - simplified positions for easier access
+    const potPositions = [
+        // Central table area (easy to reach)
+        { x: -2, y: 1.3, z: 5 },
+        { x: -1, y: 1.3, z: 5 },
+        { x: 0, y: 1.3, z: 5 },
+        { x: 1, y: 1.3, z: 5 },
+        { x: 2, y: 1.3, z: 5 },
+        // Near spawn area
+        { x: -1, y: 1.2, z: 2 },
+        { x: 1, y: 1.2, z: 2 },
+        { x: 0, y: 1.2, z: 1 },
+        // Left bench
+        { x: -4, y: 1.2, z: -2 },
+        { x: -6, y: 1.2, z: -2 },
+        // Right bench  
+        { x: 4, y: 1.2, z: -2 },
+        { x: 6, y: 1.2, z: -2 }
+    ];
+    
+    for (let i = 0; i < potPositions.length; i++) {
+        const potType = potTypes[i % potTypes.length];
+        const pos = potPositions[i];
+        
+        // Create visual pot
+        const pot = new THREE.Mesh(
+            new THREE.CylinderGeometry(potType.size, potType.size * 0.8, potType.size * 1.2),
+            new THREE.MeshLambertMaterial({ color: potType.color })
+        );
+        
+        pot.position.set(pos.x, pos.y, pos.z);
+        
+        // Create physics body for pot
+        const potShape = new CANNON.Cylinder(potType.size, potType.size * 0.8, potType.size * 1.2, 8);
+        const potBody = new CANNON.Body({ mass: 2 }); // 2kg pot
+        potBody.addShape(potShape);
+        potBody.position.set(pos.x, pos.y, pos.z);
+        potBody.material = physicsWorld.materials.plastic;
+        
+        // Add to physics world
+        physicsWorld.world.addBody(potBody);
+        physicsWorld.addDynamicObject(pot, potBody, 'plant_pot');
+        
+        pot.userData = { 
+            type: 'plant_pot',
+            potType: potType.type,
+            originalColor: potType.color,
+            interactable: true,
+            value: Math.floor(potType.size * 100),
+            physicsBody: potBody
+        };
+        pot.castShadow = true;
+        scene.add(pot);
+        
+        console.log(`🪴 Added physics-enabled pot ${i} at position ${pos.x}, ${pos.y}, ${pos.z}`);
+        
+        // Add a small glowing sphere above each pot to make them easy to see
+        const marker = new THREE.Mesh(
+            new THREE.SphereGeometry(0.05),
+            new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+        );
+        marker.position.set(pos.x, pos.y + potType.size * 1.5, pos.z);
+        scene.add(marker);
+    }
+    
+    // Gardening tools
+    addGardeningTools(scene);
+    
+    // Equipment
+    addGreenhouseEquipment(scene);
+}
+
+function addGardeningTools(scene) {
+    const toolMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    
+    // Watering can
+    const wateringCan = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.4), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
+    wateringCan.position.set(2, 1.3, 5);
+    wateringCan.userData = { type: 'watering_can', interactable: true, tool: true };
+    scene.add(wateringCan);
+    
+    // Trowel
+    const trowel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.08), toolMaterial);
+    trowel.position.set(-1.5, 1.3, 5.2);
+    trowel.rotation.z = Math.PI / 6;
+    trowel.userData = { type: 'trowel', interactable: true, tool: true };
+    scene.add(trowel);
+    
+    // Pruning shears
+    const shears = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.25, 0.02), new THREE.MeshLambertMaterial({ color: 0x444444 }));
+    shears.position.set(1, 1.3, 4.8);
+    shears.userData = { type: 'pruning_shears', interactable: true, tool: true };
+    scene.add(shears);
+}
+
+function addGreenhouseEquipment(scene) {
+    // Thermometer
+    const thermometer = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.03), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    thermometer.position.set(-9.8, 2, -2);
+    thermometer.userData = { type: 'thermometer', interactable: true };
+    scene.add(thermometer);
+    
+    // Misting system
+    for (let i = 0; i < 4; i++) {
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 18), new THREE.MeshLambertMaterial({ color: 0x444444 }));
+        pipe.rotation.z = Math.PI / 2;
+        pipe.position.set(0, 6, -6 + i * 4);
+        scene.add(pipe);
+        
+        // Nozzles
+        for (let j = 0; j < 3; j++) {
+            const nozzle = new THREE.Mesh(new THREE.SphereGeometry(0.02), new THREE.MeshLambertMaterial({ color: 0x666666 }));
+            nozzle.position.set(-6 + j * 6, 6, -6 + i * 4);
+            scene.add(nozzle);
+        }
+    }
+}
+
+function addInvisibleBoundaries(scene) {
+    // Create visible red walls for debugging first
+    const wallMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0.3
+    });
+    
+    // Boundary walls - smaller area to make sure they work
+    const boundaries = [
+        { size: [20, 10, 1], pos: [0, 5, -12] },  // North
+        { size: [20, 10, 1], pos: [0, 5, 12] },   // South  
+        { size: [1, 10, 24], pos: [12, 5, 0] },   // East
+        { size: [1, 10, 24], pos: [-12, 5, 0] }   // West
+    ];
+    
+    boundaries.forEach((boundary, index) => {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(...boundary.size), wallMaterial);
+        wall.position.set(...boundary.pos);
+        wall.userData = { type: 'boundary_wall', id: index };
+        scene.add(wall);
+        console.log('🚧 Added boundary wall', index, 'at position', boundary.pos);
+    });
+    
+    console.log('🚧 Visible boundary walls added for testing');
+}
+
+function setupEnhancedControls(scene, camera, canvas, renderer, physicsWorld) {
+    console.log('🎮 Setting up enhanced controls with physics...');
+    
+    // Movement state
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let isCrouching = false, isSprinting = false, isJumping = false;
+    let isLocked = false;
+    
+    // Player physics body for collision
+    const playerShape = new CANNON.Sphere(0.5);
+    const playerBody = new CANNON.Body({ mass: 80 }); // 80kg player
+    playerBody.addShape(playerShape);
+    playerBody.position.set(0, 2, 3);
+    playerBody.material = physicsWorld.materials.ground;
+    physicsWorld.world.addBody(playerBody);
+    
+    // Jump parameters
+    let jumpCooldown = false;
+    const jumpForce = 400;
+    
+    // Mouse lock controls
+    const controls = new THREE.PointerLockControls(camera, document.body);
+    scene.add(controls.getObject());
+    
+    controls.addEventListener('lock', () => {
+        console.log('✅ Mouse locked!');
+        isLocked = true;
+        canvas.style.cursor = 'none';
+    });
+    
+    controls.addEventListener('unlock', () => {
+        console.log('❌ Mouse unlocked');
+        isLocked = false;
+        canvas.style.cursor = 'crosshair';
+    });
+    
+    // Click to lock
+    canvas.addEventListener('click', () => {
+        console.log('🖱️ Requesting pointer lock...');
+        controls.lock();
+    });
+    
+    // Enhanced keyboard controls with physics
+    document.addEventListener('keydown', (e) => {
+        if (!isLocked) return; // Only respond when mouse is locked
+        
+        switch(e.code) {
+            case 'KeyW': case 'ArrowUp': 
+                moveForward = true; 
+                break;
+            case 'KeyS': case 'ArrowDown': 
+                moveBackward = true; 
+                break;
+            case 'KeyA': case 'ArrowLeft': 
+                moveLeft = true; 
+                break;
+            case 'KeyD': case 'ArrowRight': 
+                moveRight = true; 
+                break;
+            case 'KeyG':
+                if (!e.repeat) {
+                    handleGrabAction(camera, scene, physicsWorld);
+                }
+                break;
+            case 'KeyC':
+                if (!e.repeat) { // Only on initial press, not when held
+                    isCrouching = !isCrouching;
+                    handleCrouchToggle(camera, isCrouching);
+                }
+                break;
+            case 'KeyQ':
+                if (!e.repeat) {
+                    handleSwipeAction(camera, scene, physicsWorld);
+                }
+                break;
+            case 'Space':
+                e.preventDefault(); // Prevent page scroll
+                if (!e.repeat && !jumpCooldown) { // Only on initial press and not on cooldown
+                    handleJump(playerBody);
+                    jumpCooldown = true;
+                    setTimeout(() => { jumpCooldown = false; }, 500); // 0.5 second cooldown
+                }
+                break;
+            case 'ShiftLeft': case 'ShiftRight':
+                if (!isSprinting) {
+                    console.log('🏃‍♂️ Sprinting!');
+                    isSprinting = true;
+                }
+                break;
+            case 'Escape': 
+                if (isLocked) controls.unlock(); 
+                break;
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        switch(e.code) {
+            case 'KeyW': case 'ArrowUp': moveForward = false; break;
+            case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+            case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+            case 'KeyD': case 'ArrowRight': moveRight = false; break;
+            case 'ShiftLeft': case 'ShiftRight':
+                console.log('🚶‍♂️ Stopped sprinting');
+                isSprinting = false;
+                break;
+        }
+    });
+    
+    // Jump function with physics
+    function handleJump(playerBody) {
+        // Check if player is on ground (y velocity near 0 and position low enough)
+        if (Math.abs(playerBody.velocity.y) < 1 && playerBody.position.y < 3) {
+            console.log('🦘 Jump! Applied force:', jumpForce);
+            playerBody.velocity.y = jumpForce / playerBody.mass; // Apply jump force
+            isJumping = true;
+            
+            // Reset jumping flag after landing
+            setTimeout(() => { 
+                isJumping = false; 
+            }, 1000);
+        } else {
+            console.log('❌ Cannot jump - not on ground or already jumping');
+        }
+    }
+    
+    // Enhanced animation loop with physics integration
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        // Step physics simulation
+        physicsWorld.step(1/60);
+        
+        if (isLocked) {
+            // Store previous position for collision recovery
+            const prevPosition = camera.position.clone();
+            
+            // Dynamic movement speeds based on state
+            let speed = 0.1; // Base speed
+            
+            if (isCrouching) {
+                speed = 0.05; // Slower when crouching
+            } else if (isSprinting) {
+                speed = 0.2; // Faster when sprinting
+            }
+            
+            // Apply movement to physics body
+            const moveVector = new THREE.Vector3();
+            
+            if (moveForward) moveVector.z -= speed;
+            if (moveBackward) moveVector.z += speed;
+            if (moveLeft) moveVector.x -= speed;
+            if (moveRight) moveVector.x += speed;
+            
+            // Apply camera rotation to movement
+            if (moveVector.length() > 0) {
+                moveVector.applyQuaternion(camera.quaternion);
+                moveVector.y = 0; // Don't apply vertical movement from camera
+                
+                // Apply movement to physics body
+                playerBody.velocity.x = moveVector.x * 50;
+                playerBody.velocity.z = moveVector.z * 50;
+            } else {
+                // Apply friction when not moving
+                playerBody.velocity.x *= 0.8;
+                playerBody.velocity.z *= 0.8;
+            }
+            
+            // Sync camera position with physics body
+            camera.position.x = playerBody.position.x;
+            camera.position.z = playerBody.position.z;
+            
+            // Adjust camera height based on state
+            if (isCrouching) {
+                camera.position.y = playerBody.position.y - 0.3;
+            } else {
+                camera.position.y = playerBody.position.y + 0.5;
+            }
+            
+            // Prevent falling through floor
+            if (playerBody.position.y < 0.5) {
+                playerBody.position.y = 0.5;
+                playerBody.velocity.y = 0;
+            }
+        }
+        
+        renderer.render(scene, camera);
+    }
+    
+    animate();
+    
+    // Store references globally for debugging
+    window.gameScene = { scene, camera, renderer, controls, playerBody, physicsWorld };
+    console.log('✅ Enhanced controls with physics setup complete!');
+}
+
+function handleGrabAction(camera, scene, physicsWorld) {
+    console.log('🤏 G key pressed - Grab/Interact!');
+    console.log('🧭 Player position:', camera.position.x.toFixed(2), camera.position.y.toFixed(2), camera.position.z.toFixed(2));
+    
+    // Debug: list all interactable objects and their distances
+    const allInteractables = [];
+    scene.children.forEach(child => {
+        if (child.userData?.interactable) {
+            const distance = camera.position.distanceTo(child.position);
+            allInteractables.push({
+                type: child.userData.type,
+                distance: distance.toFixed(2),
+                position: `${child.position.x.toFixed(1)}, ${child.position.y.toFixed(1)}, ${child.position.z.toFixed(1)}`
+            });
+        }
+    });
+    
+    console.log('🔍 All interactable objects:', allInteractables);
+    
+    const nearestObject = findNearestInteractable(camera.position, scene);
+    
+    if (nearestObject) {
+        console.log('📦 Grabbing:', nearestObject.userData?.type || 'object');
+        console.log('📏 Distance:', camera.position.distanceTo(nearestObject.position).toFixed(2), 'units');
+        
+        // Enhanced grab effects
+        nearestObject.material.color.setHex(0xffffff);
+        
+        // Add value/info display
+        if (nearestObject.userData?.value) {
+            console.log('💰 Value:', nearestObject.userData.value, 'coins');
+        }
+        
+        setTimeout(() => {
+            nearestObject.material.color.setHex(nearestObject.userData.originalColor);
+        }, 500);
+    } else {
+        console.log('❌ No objects nearby to grab (within 4 units)');
+    }
+}
+
+function handleCrouchToggle(camera, isCrouching) {
+    if (isCrouching) {
+        console.log('🦆 Crouching down');
+        camera.position.y = 1.2;
+    } else {
+        console.log('🧍 Standing up');
+        camera.position.y = 1.75;
+    }
+}
+
+function handleSwipeAction(camera, scene, physicsWorld) {
+    console.log('🗡️ Swipe attack with stick hand!');
+    
+    // Create visual stick hand that extends from camera
+    const stickGeometry = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8);
+    const stickMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    const stickHand = new THREE.Mesh(stickGeometry, stickMaterial);
+    
+    // Position stick in front of camera
+    const stickDirection = new THREE.Vector3(0, 0, -1);
+    stickDirection.applyQuaternion(camera.quaternion);
+    
+    stickHand.position.copy(camera.position);
+    stickHand.position.add(stickDirection.clone().multiplyScalar(0.8));
+    stickHand.lookAt(camera.position.clone().add(stickDirection.clone().multiplyScalar(2)));
+    stickHand.rotateX(Math.PI / 2);
+    
+    scene.add(stickHand);
+    console.log('🦾 Stick hand extended!');
+    
+    // Find nearby objects to swipe
+    const nearbyObjects = [];
+    const swipeRange = 2.5;
+    
+    scene.children.forEach(child => {
+        if (child.userData?.interactable) {
+            const distance = camera.position.distanceTo(child.position);
+            if (distance < swipeRange) {
+                nearbyObjects.push(child);
+            }
+        }
+    });
+    
+    if (nearbyObjects.length > 0) {
+        console.log('💥 Swiped', nearbyObjects.length, 'objects!');
+        nearbyObjects.forEach(obj => {
+            // Enhanced swipe effects
+            obj.material.color.setHex(0xff0000);
+            
+            // Apply physics force if object has physics body
+            if (obj.userData?.physicsBody) {
+                const forceDirection = new THREE.Vector3();
+                forceDirection.subVectors(obj.position, camera.position).normalize();
+                
+                // Apply a strong horizontal force to knock off table
+                const force = new CANNON.Vec3(
+                    forceDirection.x * 100,
+                    20, // Slight upward force
+                    forceDirection.z * 100
+                );
+                
+                obj.userData.physicsBody.applyImpulse(force, obj.userData.physicsBody.position);
+                console.log('💪 Applied physics force to', obj.userData.type);
+            }
+            
+            // Visual feedback
+            setTimeout(() => {
+                if (obj.userData?.originalColor) {
+                    obj.material.color.setHex(obj.userData.originalColor);
+                }
+            }, 300);
+        });
+    } else {
+        console.log('🌬️ Swipe missed - no objects nearby');
+    }
+    
+    // Remove stick hand after short delay
+    setTimeout(() => {
+        scene.remove(stickHand);
+        console.log('🦾 Stick hand retracted');
+    }, 500);
+}
+
+function findNearestInteractable(playerPos, scene) {
+    let nearest = null;
+    let minDistance = 4; // Increased grab distance
+    
+    scene.children.forEach(child => {
+        if (child.userData?.interactable) {
+            const distance = playerPos.distanceTo(child.position);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = child;
+            }
+        }
+    });
+    
+    return nearest;
 }
 
 function closeTutorialManually() {
@@ -2504,4 +3591,4 @@ function init() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// Initialization handled by HTML script tag
