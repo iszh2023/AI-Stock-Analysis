@@ -36,14 +36,8 @@
                     <button class="load-game-btn" onclick="alert('Load Collection temporarily disabled to prevent glitches!')" id="load-btn" style="background: #666; cursor: not-allowed;">
                         📂 Load Collection (disabled temporarily)
                     </button>
-                    <button class="new-game-btn" onclick="testThreeJS()" style="background: #ff6600; margin-left: 10px;">
-                        🧪 TEST THREE.JS (simple)
-                    </button>
-                    <button class="new-game-btn" onclick="startSimpleGame()" style="background: #4CAF50; margin-left: 10px;">
-                        🎮 SIMPLE GAME (fixed)
-                    </button>
                     <button class="new-game-btn" onclick="startWorkingGame()" style="background: #28a745; margin-left: 10px;">
-                        🎮 FULL GAME (broken)
+                        🎮 START GAME (does not save)
                     </button>
                 </div>
             </div>
@@ -315,71 +309,6 @@
 
     <script src="script.js"></script>
     <script>
-        // MINIMAL THREE.JS TEST FUNCTION
-        function testThreeJS() {
-            console.log('🧪 Starting minimal Three.js test...');
-            
-            // Hide all screens and show game screen
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            document.getElementById('game-screen').style.display = 'block';
-            
-            const canvas = document.getElementById('three-canvas');
-            console.log('Canvas found:', !!canvas);
-            console.log('Canvas size:', canvas?.clientWidth, 'x', canvas?.clientHeight);
-            
-            if (!canvas) {
-                alert('❌ Canvas not found!');
-                return;
-            }
-            
-            try {
-                // Create scene with GREEN background (easy to see)
-                const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x00ff00);
-                console.log('✅ Scene created with green background');
-                
-                // Create camera
-                const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-                camera.position.z = 5;
-                console.log('✅ Camera created at z=5');
-                
-                // Create renderer
-                const renderer = new THREE.WebGLRenderer({ canvas: canvas });
-                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-                console.log('✅ Renderer created and sized');
-                
-                // Create spinning red cube
-                const geometry = new THREE.BoxGeometry(2, 2, 2);
-                const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                const cube = new THREE.Mesh(geometry, material);
-                scene.add(cube);
-                console.log('✅ Red cube added to scene');
-                
-                // Test single render
-                renderer.render(scene, camera);
-                console.log('✅ First render complete');
-                
-                // Start animation loop
-                function animate() {
-                    requestAnimationFrame(animate);
-                    cube.rotation.x += 0.02;
-                    cube.rotation.y += 0.02;
-                    renderer.render(scene, camera);
-                }
-                animate();
-                console.log('✅ Animation loop started');
-                
-                // Success message
-                setTimeout(() => {
-                    alert('✅ Three.js test successful! You should see a green screen with a spinning red cube.');
-                }, 1000);
-                
-            } catch (error) {
-                console.error('❌ Three.js test failed:', error);
-                alert('❌ Three.js error: ' + error.message);
-            }
-        }
-
         // Initialize game when page loads
         window.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Page loaded, initializing game...');
@@ -482,31 +411,21 @@
                 renderer.shadowMap.enabled = true;
                 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 
-                // SIMPLE BRIGHT LIGHTING (ORIGINAL WORKING VERSION)
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                // ENHANCED LIGHTING SYSTEM
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.7);
                 scene.add(ambientLight);
                 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(50, 50, 25);
-                directionalLight.castShadow = true;
-                directionalLight.shadow.mapSize.width = 2048;
-                directionalLight.shadow.mapSize.height = 2048;
-                directionalLight.shadow.camera.near = 0.5;
-                directionalLight.shadow.camera.far = 500;
-                directionalLight.shadow.camera.left = -100;
-                directionalLight.shadow.camera.right = 100;
-                directionalLight.shadow.camera.top = 100;
-                directionalLight.shadow.camera.bottom = -100;
-                scene.add(directionalLight);
+                const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+                sunLight.position.set(50, 50, 25);
+                sunLight.castShadow = true;
+                sunLight.shadow.mapSize.width = 4096;
+                sunLight.shadow.mapSize.height = 4096;
+                scene.add(sunLight);
                 
-                // TEST CUBE TO MAKE SURE RENDERING WORKS
-                const testCube = new THREE.Mesh(
-                    new THREE.BoxGeometry(2, 2, 2),
-                    new THREE.MeshLambertMaterial({ color: 0xFF0000 }) // Bright red
-                );
-                testCube.position.set(0, 3, 0);
-                scene.add(testCube);
-                console.log('🔴 Added test cube at origin');
+                // Warm lighting for tropical feel
+                const warmLight = new THREE.PointLight(0xffaa44, 0.5, 100);
+                warmLight.position.set(0, 20, 0);
+                scene.add(warmLight);
                 
                 // THREE-LEVEL TROPICAL ISLAND WITH RAMPS
                 const createIslandLevel = (size, height, color) => {
@@ -1776,44 +1695,6 @@
                 createHeldItemDisplay();
                 console.log('📦 Inventory system initialized');
                 
-                // CREATE MOUSE LOCK BUTTON
-                const createMouseLockButton = () => {
-                    const lockButton = document.createElement('button');
-                    lockButton.id = 'mouse-lock-btn';
-                    lockButton.innerHTML = '🖱️ Click to Lock Mouse';
-                    lockButton.style.cssText = `
-                        position: fixed;
-                        top: 70px;
-                        left: 20px;
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 10px 15px;
-                        border: none;
-                        border-radius: 8px;
-                        font-family: Arial, sans-serif;
-                        font-size: 14px;
-                        cursor: pointer;
-                        z-index: 1000;
-                        border: 2px solid #4CAF50;
-                    `;
-                    
-                    lockButton.onclick = () => {
-                        console.log('🖱️ Manual mouse lock requested');
-                        controls.lock();
-                    };
-                    
-                    document.body.appendChild(lockButton);
-                    return lockButton;
-                };
-                
-                const mouseLockButton = createMouseLockButton();
-                
-                // REMOVE ANY EXISTING TIME DISPLAY
-                const existingTimeDisplay = document.getElementById('time-display');
-                if (existingTimeDisplay) {
-                    existingTimeDisplay.remove();
-                }
-                
                 // CREATE SHOPPING CART DISPLAY
                 const createCartDisplay = () => {
                     const cartDisplay = document.createElement('div');
@@ -1941,35 +1822,9 @@
                     // Success message
                     showNPCDialogue(npcName, `Thank you for your purchase! That'll be $${totalCartValue.toFixed(2)}. Enjoy your new plants!`);
                     
-                    // Process special items and remove purchased items from store
+                    // Remove purchased plants from store and clear cart
                     shoppingCart.forEach(item => {
-                        // Handle special item purchases
-                        if (item.plant && item.plant.userData) {
-                            const itemType = item.plant.userData.type;
-                            
-                            switch (itemType) {
-                                case 'flashlight':
-                                    hasFlashlight = true;
-                                    console.log('🔦 You now own a flashlight! Press F to toggle.');
-                                    showDialogue("Purchase", "🔦 Flashlight acquired! Press F to toggle on/off.");
-                                    break;
-                                case 'bug_zapper':
-                                    console.log('⚡ Bug zapper purchased! Place it and press B to activate.');
-                                    showDialogue("Purchase", "⚡ Bug Zapper acquired! Place it in your world and press B to activate.");
-                                    break;
-                                case 'store_kit':
-                                    console.log('🏪 Store Kit purchased! You can now place custom stores for $1000.');
-                                    showDialogue("Purchase", "🏪 Store Kit acquired! You can now place custom stores.");
-                                    break;
-                                case 'expansion_kit':
-                                    console.log('📐 Expansion Kit purchased! You can now expand stores for $500.');
-                                    showDialogue("Purchase", "📐 Expansion Kit acquired! You can now expand existing stores.");
-                                    break;
-                            }
-                        }
-                        
-                        // Remove from store display
-                        if (item.plant && item.plant.parent) {
+                        if (item.plant.parent) {
                             item.plant.parent.remove(item.plant);
                         }
                     });
@@ -2658,20 +2513,12 @@
                     console.log('✅ Mouse locked!');
                     isLocked = true;
                     canvas.style.cursor = 'none';
-                    
-                    // Hide mouse lock button when locked
-                    const lockBtn = document.getElementById('mouse-lock-btn');
-                    if (lockBtn) lockBtn.style.display = 'none';
                 });
                 
                 controls.addEventListener('unlock', () => {
                     console.log('❌ Mouse unlocked');
                     isLocked = false;
                     canvas.style.cursor = 'crosshair';
-                    
-                    // Show mouse lock button when unlocked
-                    const lockBtn = document.getElementById('mouse-lock-btn');
-                    if (lockBtn) lockBtn.style.display = 'block';
                 });
                 
                 // Click to lock
@@ -2806,7 +2653,10 @@
                 let heldItemDisplay = null; // 3D display in corner
                 let inventoryUI = null; // UI container
                 
-                // FLASHLIGHT SYSTEM (without day/night cycle)
+                // DAY/NIGHT CYCLE SYSTEM
+                let gameTime = 12; // Start at noon (0-24 hours)
+                let timeSpeed = 0.02; // How fast time passes
+                let isNightTime = false;
                 let hasFlashlight = false;
                 let flashlightOn = false;
                 let flashlightLight = null;
@@ -3170,6 +3020,77 @@
                     }
                 }
                 
+                // DAY/NIGHT CYCLE FUNCTIONS
+                function updateDayNightCycle() {
+                    // Update game time
+                    gameTime += timeSpeed / 60; // Assuming 60 FPS
+                    if (gameTime >= 24) gameTime = 0;
+                    
+                    // Determine if it's night time (6 PM to 6 AM)
+                    isNightTime = gameTime < 6 || gameTime >= 18;
+                    
+                    // Update lighting based on time
+                    const sun = scene.children.find(light => light.type === 'DirectionalLight');
+                    const ambient = scene.children.find(light => light.type === 'AmbientLight');
+                    
+                    if (sun && ambient) {
+                        if (isNightTime) {
+                            // Night time - very dim lighting
+                            sun.intensity = 0.1;
+                            ambient.intensity = 0.1;
+                            sun.color.setHex(0x202040); // Dark blue
+                            scene.background = new THREE.Color(0x000020); // Dark night sky
+                            scene.fog.color.setHex(0x000020);
+                        } else {
+                            // Day time - bright lighting
+                            const dayProgress = Math.sin((gameTime - 6) * Math.PI / 12);
+                            sun.intensity = Math.max(0.3, dayProgress * 0.8);
+                            ambient.intensity = Math.max(0.2, dayProgress * 0.6);
+                            
+                            if (gameTime < 8 || gameTime > 16) {
+                                // Dawn/Dusk
+                                sun.color.setHex(0xFF8844);
+                                scene.background = new THREE.Color(0xFF6644);
+                            } else {
+                                // Midday
+                                sun.color.setHex(0xFFFFFF);
+                                scene.background = new THREE.Color(0x87CEEB);
+                            }
+                            scene.fog.color = scene.background;
+                        }
+                    }
+                    
+                    // Update time display
+                    updateTimeDisplay();
+                }
+                
+                function updateTimeDisplay() {
+                    let timeDisplay = document.getElementById('time-display');
+                    if (!timeDisplay) {
+                        timeDisplay = document.createElement('div');
+                        timeDisplay.id = 'time-display';
+                        timeDisplay.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            left: 20px;
+                            background: rgba(0, 0, 0, 0.8);
+                            color: white;
+                            padding: 10px 15px;
+                            border-radius: 8px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            z-index: 1000;
+                        `;
+                        document.body.appendChild(timeDisplay);
+                    }
+                    
+                    const hours = Math.floor(gameTime);
+                    const minutes = Math.floor((gameTime % 1) * 60);
+                    const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    const period = isNightTime ? '🌙' : '☀️';
+                    
+                    timeDisplay.innerHTML = `${period} ${timeString}`;
+                }
                 
                 function createFlashlight() {
                     // Create flashlight item
@@ -4003,10 +3924,13 @@
                 function animate() {
                     requestAnimationFrame(animate);
                     
-                    // Update plant care system (DISABLED TO PREVENT LIGHTING ISSUES)
-                    // if (window.plantCareSystem) {
-                    //     window.plantCareSystem.update(1/60); // Assuming 60 FPS
-                    // }
+                    // Update plant care system
+                    if (window.plantCareSystem) {
+                        window.plantCareSystem.update(1/60); // Assuming 60 FPS
+                    }
+                    
+                    // Update day/night cycle
+                    updateDayNightCycle();
                     
                     // Update bugs and bug zappers
                     updateBugs();
