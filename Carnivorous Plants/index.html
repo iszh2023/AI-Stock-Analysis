@@ -33,11 +33,11 @@
                     <button class="new-game-btn" onclick="showNewGameDialog()">
                         🌱 Start New Collection
                     </button>
-                    <button class="load-game-btn" onclick="alert('Load Collection temporarily disabled to prevent glitches!')" id="load-btn" style="background: #666; cursor: not-allowed;">
-                        📂 Load Collection (disabled temporarily)
+                    <button class="load-game-btn" onclick="showLoadGameDialog()" id="load-btn" disabled>
+                        📂 Load Collection
                     </button>
                     <button class="new-game-btn" onclick="startWorkingGame()" style="background: #28a745; margin-left: 10px;">
-                        🎮 START GAME (does not save)
+                        🎮 START GAME
                     </button>
                 </div>
             </div>
@@ -78,8 +78,8 @@
             <!-- Quick Info -->
             <div class="game-info">
                 <div class="info-card">
-                    <h4>🪙 Coin Collection</h4>
-                    <p>Collect golden coins scattered across the tropical island</p>
+                    <h4>🏪 Plant Store</h4>
+                    <p>Browse and purchase realistic carnivorous plant specimens</p>
                 </div>
                 <div class="info-card">
                     <h4>🧬 Species Database</h4>
@@ -161,7 +161,10 @@
                     <h3>🌿 Your Plants</h3>
                     <div class="plant-list" id="plant-list">
                         <div class="empty-collection">
-                            <p>Explore the island to find plants and collect coins!</p>
+                            <p>No plants yet!</p>
+                            <button onclick="openStore()" class="add-plant-btn">
+                                🛒 Visit Plant Store
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -172,7 +175,7 @@
                         <h3>🌿 3D Plant Environment</h3>
                         <div class="simulator-controls">
                             <div class="movement-instructions">
-                                <span>WASD to move • Mouse to look • G to grab</span>
+                                <span>WASD to move • Mouse to look • Click to interact</span>
                             </div>
                             <div class="environment-info">
                                 <span id="current-location">Greenhouse</span>
@@ -215,14 +218,6 @@
                                             <p><strong>Escape</strong> - Exit mouse look mode</p>
                                         </div>
                                         
-                                        <h4>📷 Camera Controls</h4>
-                                        <div class="control-list">
-                                            <p><strong>Mouse Wheel/Two-Finger Scroll</strong> - Zoom in/out</p>
-                                            <p><strong>Right Click + Drag</strong> - Orbit camera around player (third person)</p>
-                                            <p><strong>Zoom out</strong> - Switch to third person view</p>
-                                            <p><strong>Zoom in</strong> - Switch to first person view</p>
-                                        </div>
-                                        
                                         <h4>🤝 Interaction Controls</h4>
                                         <div class="control-list">
                                             <p><strong>E</strong> - Enter stores, talk to NPCs, use teleports</p>
@@ -230,13 +225,13 @@
                                             <p><strong>H</strong> - Show help menu</p>
                                         </div>
                                         
-                                        <h4>🪙 Coin Collection</h4>
+                                        <h4>🛒 Shopping Instructions</h4>
                                         <div class="control-list">
-                                            <p>1. Explore the massive tropical island</p>
-                                            <p>2. Look for golden coins scattered around</p>
-                                            <p>3. Press <strong>G</strong> near coins to collect them</p>
-                                            <p>4. Earn +$1.00 for each coin collected</p>
-                                            <p>5. Use money to buy plants from stores</p>
+                                            <p>1. Walk outside your greenhouse</p>
+                                            <p>2. Find the Plant Store building</p>
+                                            <p>3. Press <strong>E</strong> to enter the store</p>
+                                            <p>4. Walk up to plants and press <strong>G</strong> to examine them</p>
+                                            <p>5. Go to checkout counter and press <strong>G</strong> to buy</p>
                                         </div>
                                         
                                         <h4>💰 Auto-Earning System</h4>
@@ -246,12 +241,12 @@
                                             <p>• Visit the bank to manage your money</p>
                                         </div>
                                         
-                                        <h4>🏪 Island Stores</h4>
+                                        <h4>🏪 Available Stores</h4>
                                         <div class="control-list">
-                                            <p>• Plant Paradise - Carnivorous plant specialists</p>
-                                            <p>• Exotic Plants Co - Rare species collection</p>
-                                            <p>• Garden Supply - Tools and supplies</p>
-                                            <p>• Plant Hospital - Care and treatment</p>
+                                            <p>• Plant Store - Buy carnivorous plants</p>
+                                            <p>• Bank - Manage your finances</p>
+                                            <p>• Electronics Store - Climate control equipment</p>
+                                            <p>• Emergency Store - Safety equipment</p>
                                             <p>• And 5 more specialized stores!</p>
                                         </div>
                                     </div>
@@ -323,58 +318,8 @@
             }
         });
         
-        // SAVE AND LOAD SYSTEM
-        function saveGame() {
-            if (typeof window.game !== 'undefined' && window.game.camera) {
-                const gameState = {
-                    playerPosition: {
-                        x: window.game.camera.position.x,
-                        y: window.game.camera.position.y,
-                        z: window.game.camera.position.z
-                    },
-                    playerMoney: window.game.playerMoney || 50.00,
-                    gameVersion: "fixed_version_v2", // Mark this as the fixed version
-                    timestamp: Date.now()
-                };
-                
-                localStorage.setItem('carnivorous_plants_save', JSON.stringify(gameState));
-                console.log('💾 Game saved successfully!', gameState);
-                alert('💾 Game saved! Position and money preserved.');
-            } else {
-                alert('⚠️ Please start the game first before saving.');
-            }
-        }
-        
-        function loadGame() {
-            const savedGame = localStorage.getItem('carnivorous_plants_save');
-            if (savedGame) {
-                try {
-                    const gameState = JSON.parse(savedGame);
-                    console.log('📂 Loading saved game:', gameState);
-                    
-                    // Check if it's the new fixed version
-                    if (gameState.gameVersion === "fixed_version_v2") {
-                        // Load the fixed game with saved state
-                        startWorkingGame(gameState);
-                    } else {
-                        // Old save file - ask user
-                        if (confirm('⚠️ This is an old save file. Load with current fixed version instead?')) {
-                            startWorkingGame(gameState);
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Error loading save:', error);
-                    alert('⚠️ Save file corrupted. Starting new game.');
-                    startWorkingGame();
-                }
-            } else {
-                alert('📂 No saved game found. Starting new game.');
-                startWorkingGame();
-            }
-        }
-
         // Working 3D Game - COMPLETELY REWRITTEN
-        function startWorkingGame(savedState = null) {
+        function startWorkingGame() {
             console.log('🎮 Starting ENHANCED 3D Carnivorous Plants Paradise...');
             
             try {
@@ -393,18 +338,7 @@
                 scene.fog = new THREE.Fog(0x87CEEB, 50, 200); // Longer view distance
                 
                 const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 500);
-                
-                // Set camera position from saved state or default
-                if (savedState && savedState.playerPosition) {
-                    camera.position.set(
-                        savedState.playerPosition.x,
-                        savedState.playerPosition.y,
-                        savedState.playerPosition.z
-                    );
-                    console.log('📍 Loaded player position:', savedState.playerPosition);
-                } else {
-                    camera.position.set(0, 2, 5);
-                }
+                camera.position.set(0, 2, 5);
                 
                 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
                 renderer.setSize(canvas.clientWidth, canvas.clientHeight);
@@ -427,140 +361,31 @@
                 warmLight.position.set(0, 20, 0);
                 scene.add(warmLight);
                 
-                // THREE-LEVEL TROPICAL ISLAND WITH RAMPS
-                const createIslandLevel = (size, height, color) => {
-                    const levelGeometry = new THREE.PlaneGeometry(size, size);
-                    const levelMaterial = new THREE.MeshLambertMaterial({ color: color });
-                    const level = new THREE.Mesh(levelGeometry, levelMaterial);
-                    level.rotation.x = -Math.PI / 2;
-                    level.position.y = height;
-                    level.receiveShadow = true;
-                    return level;
-                };
+                // MASSIVE TROPICAL ISLAND (100x100 units!)
+                const islandGeometry = new THREE.PlaneGeometry(100, 100);
+                const islandMaterial = new THREE.MeshLambertMaterial({ color: 0x2d5016 }); // Rich green
+                const island = new THREE.Mesh(islandGeometry, islandMaterial);
+                island.rotation.x = -Math.PI / 2;
+                island.receiveShadow = true;
+                scene.add(island);
                 
-                // Level 1 (Ground) - 150x150
-                const level1 = createIslandLevel(150, 0, 0x2d5016); // Dark green
-                scene.add(level1);
-                
-                // Level 2 (Middle) - 100x100 
-                const level2 = createIslandLevel(100, 8, 0x3d6026); // Medium green
-                scene.add(level2);
-                
-                // Level 3 (Top) - 50x50
-                const level3 = createIslandLevel(50, 16, 0x4d7036); // Light green
-                scene.add(level3);
-                
-                // CREATE RAMPS AT CORNERS
-                const createRamp = (x, z, width, length, startHeight, endHeight, rotation = 0) => {
-                    const rampGeometry = new THREE.PlaneGeometry(width, length);
-                    const rampMaterial = new THREE.MeshLambertMaterial({ color: 0x8B7355 }); // Brown path
-                    const ramp = new THREE.Mesh(rampGeometry, rampMaterial);
-                    
-                    ramp.position.set(x, (startHeight + endHeight) / 2, z);
-                    ramp.rotation.y = rotation;
-                    
-                    // Calculate proper ramp angle
-                    const heightDiff = endHeight - startHeight;
-                    const angle = Math.atan2(heightDiff, length);
-                    ramp.rotation.x = -Math.PI / 2 + angle;
-                    
-                    ramp.receiveShadow = true;
-                    scene.add(ramp);
-                    return ramp;
-                };
-                
-                // Ramps from Level 1 to Level 2 (8 units up)
-                createRamp(35, 35, 8, 20, 0, 8, Math.PI / 4);     // Northeast corner
-                createRamp(-35, 35, 8, 20, 0, 8, -Math.PI / 4);   // Northwest corner  
-                createRamp(35, -35, 8, 20, 0, 8, -Math.PI / 4);   // Southeast corner
-                createRamp(-35, -35, 8, 20, 0, 8, Math.PI / 4);   // Southwest corner
-                
-                // Ramps from Level 2 to Level 3 (8 units up)
-                createRamp(18, 18, 6, 15, 8, 16, Math.PI / 4);    // Northeast corner
-                createRamp(-18, 18, 6, 15, 8, 16, -Math.PI / 4);  // Northwest corner
-                createRamp(18, -18, 6, 15, 8, 16, -Math.PI / 4);  // Southeast corner
-                createRamp(-18, -18, 6, 15, 8, 16, Math.PI / 4);  // Southwest corner
-                
-                // Add support pillars under levels
-                const pillarMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
-                
-                // Pillars for Level 2
-                for (let i = 0; i < 16; i++) {
-                    const pillarGeometry = new THREE.CylinderGeometry(1, 1.5, 8);
-                    const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
-                    const angle = (i / 16) * Math.PI * 2;
-                    pillar.position.set(
-                        Math.cos(angle) * 35,
-                        4,
-                        Math.sin(angle) * 35
-                    );
-                    pillar.castShadow = true;
-                    scene.add(pillar);
-                }
-                
-                // Pillars for Level 3
-                for (let i = 0; i < 8; i++) {
-                    const pillarGeometry = new THREE.CylinderGeometry(0.8, 1.2, 8);
-                    const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
-                    const angle = (i / 8) * Math.PI * 2;
-                    pillar.position.set(
-                        Math.cos(angle) * 18,
-                        12,
-                        Math.sin(angle) * 18
-                    );
-                    pillar.castShadow = true;
-                    scene.add(pillar);
-                }
-                
-                // Add beach areas around the bottom level edges
-                for (let i = 0; i < 20; i++) {
-                    const beachGeometry = new THREE.PlaneGeometry(8, 8);
-                    const beachMaterial = new THREE.MeshLambertMaterial({ color: 0xF4A460 }); // Sandy beach
-                    const beach = new THREE.Mesh(beachGeometry, beachMaterial);
-                    beach.rotation.x = -Math.PI / 2;
-                    beach.position.set(
-                        (Math.random() - 0.5) * 140,
-                        0.01,
-                        (Math.random() - 0.5) * 140
-                    );
-                    // Only place beach areas near edges
-                    if (Math.abs(beach.position.x) > 60 || Math.abs(beach.position.z) > 60) {
-                        scene.add(beach);
-                    }
-                }
-                
-                // BEAUTIFUL EXTENSIVE PATHWAY NETWORK
+                // BEAUTIFUL PATHWAYS
                 const pathMaterial = new THREE.MeshLambertMaterial({ color: 0xDEB887 }); // Sandy path
-                
-                // Main central path (bigger)
-                const mainPath = new THREE.Mesh(new THREE.PlaneGeometry(6, 120), pathMaterial);
+                const mainPath = new THREE.Mesh(new THREE.PlaneGeometry(4, 80), pathMaterial);
                 mainPath.rotation.x = -Math.PI / 2;
-                mainPath.position.set(0, 0.02, 0);
+                mainPath.position.set(0, 0.01, 0);
                 scene.add(mainPath);
                 
-                // Cross paths for exploration (bigger and more)
-                const crossPath1 = new THREE.Mesh(new THREE.PlaneGeometry(100, 5), pathMaterial);
+                // Cross paths for exploration
+                const crossPath1 = new THREE.Mesh(new THREE.PlaneGeometry(60, 3), pathMaterial);
                 crossPath1.rotation.x = -Math.PI / 2;
-                crossPath1.position.set(0, 0.02, -30);
+                crossPath1.position.set(0, 0.01, -20);
                 scene.add(crossPath1);
                 
-                const crossPath2 = new THREE.Mesh(new THREE.PlaneGeometry(100, 5), pathMaterial);
+                const crossPath2 = new THREE.Mesh(new THREE.PlaneGeometry(60, 3), pathMaterial);
                 crossPath2.rotation.x = -Math.PI / 2;
-                crossPath2.position.set(0, 0.02, 30);
+                crossPath2.position.set(0, 0.01, 20);
                 scene.add(crossPath2);
-                
-                // Diagonal paths for better connectivity
-                const diagonalPath1 = new THREE.Mesh(new THREE.PlaneGeometry(80, 4), pathMaterial);
-                diagonalPath1.rotation.x = -Math.PI / 2;
-                diagonalPath1.rotation.y = Math.PI / 4;
-                diagonalPath1.position.set(0, 0.02, 0);
-                scene.add(diagonalPath1);
-                
-                const diagonalPath2 = new THREE.Mesh(new THREE.PlaneGeometry(80, 4), pathMaterial);
-                diagonalPath2.rotation.x = -Math.PI / 2;
-                diagonalPath2.rotation.y = -Math.PI / 4;
-                diagonalPath2.position.set(0, 0.02, 0);
-                scene.add(diagonalPath2);
                 
                 // MULTIPLE GREENHOUSE STRUCTURES
                 const createGreenhouse = (x, z, width, depth, color) => {
@@ -617,7 +442,6 @@
                     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
                     trunk.position.set(x, 4, z);
                     trunk.castShadow = true;
-                    trunk.userData = { type: 'palm_trunk', grabbable: true };
                     scene.add(trunk);
                     
                     // Palm fronds
@@ -631,7 +455,6 @@
                         frond.position.set(x, 8, z);
                         frond.rotation.y = (i / 8) * Math.PI * 2;
                         frond.rotation.x = -0.3;
-                        frond.userData = { type: 'palm_frond', grabbable: true };
                         scene.add(frond);
                     }
                 };
@@ -659,7 +482,6 @@
                     const platform = new THREE.Mesh(platformGeometry, platformMaterial);
                     platform.position.set(centerX, 0.1, centerZ);
                     platform.castShadow = true;
-                    platform.userData = { type: 'plant_platform', grabbable: true };
                     scene.add(platform);
                     
                     // Pots on the platform
@@ -686,18 +508,6 @@
                         };
                         pot.castShadow = true;
                         scene.add(pot);
-                        
-                        // Add green glow marker above each pot for visibility
-                        const marker = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.08),
-                            new THREE.MeshBasicMaterial({ 
-                                color: 0x00ff00,
-                                transparent: true,
-                                opacity: 0.6
-                            })
-                        );
-                        marker.position.set(potX, 0.3 + potSize * 2.5, potZ);
-                        scene.add(marker);
                         
                         // Add realistic carnivorous plant inside pot
                         const createRealisticPlant = (species, potX, potY, potZ, potSize) => {
@@ -862,1608 +672,6 @@
                 createPlantStation(0, -30, 2);   // South station
                 createPlantStation(0, 30, 2);    // North station
                 
-                // CREATE REALISTIC CARNIVOROUS PLANTS
-                const createRealisticPlant = (plantType, potSize = 0.3) => {
-                    const plantGroup = new THREE.Group();
-                    
-                    // Realistic pot
-                    const potGeometry = new THREE.CylinderGeometry(potSize, potSize * 0.8, potSize * 0.6, 8);
-                    const potMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-                    const pot = new THREE.Mesh(potGeometry, potMaterial);
-                    pot.position.y = potSize * 0.3;
-                    plantGroup.add(pot);
-                    
-                    // Soil
-                    const soilGeometry = new THREE.CylinderGeometry(potSize * 0.9, potSize * 0.9, 0.05, 8);
-                    const soilMaterial = new THREE.MeshLambertMaterial({ color: 0x4A4A4A });
-                    const soil = new THREE.Mesh(soilGeometry, soilMaterial);
-                    soil.position.y = potSize * 0.55;
-                    plantGroup.add(soil);
-                    
-                    // Plant specific parts
-                    switch (plantType) {
-                        case 'venus_flytrap':
-                            // Multiple traps
-                            for (let t = 0; t < 3; t++) {
-                                const trapGroup = new THREE.Group();
-                                
-                                // Trap lobes (mouth)
-                                const lobe1 = new THREE.Mesh(
-                                    new THREE.SphereGeometry(potSize * 0.3, 8, 6),
-                                    new THREE.MeshLambertMaterial({ color: 0x90EE90 })
-                                );
-                                lobe1.scale.set(1, 0.3, 1.5);
-                                
-                                const lobe2 = new THREE.Mesh(
-                                    new THREE.SphereGeometry(potSize * 0.3, 8, 6),
-                                    new THREE.MeshLambertMaterial({ color: 0x90EE90 })
-                                );
-                                lobe2.scale.set(1, 0.3, 1.5);
-                                lobe2.position.y = potSize * 0.15;
-                                
-                                // Trap stem
-                                const stem = new THREE.Mesh(
-                                    new THREE.CylinderGeometry(0.02, 0.02, potSize * 0.5),
-                                    new THREE.MeshLambertMaterial({ color: 0x228B22 })
-                                );
-                                stem.position.y = potSize * 0.25;
-                                
-                                trapGroup.add(lobe1);
-                                trapGroup.add(lobe2);
-                                trapGroup.add(stem);
-                                
-                                // Position traps around center
-                                const angle = (t / 3) * Math.PI * 2;
-                                trapGroup.position.set(
-                                    Math.cos(angle) * potSize * 0.3,
-                                    potSize * 0.6,
-                                    Math.sin(angle) * potSize * 0.3
-                                );
-                                trapGroup.rotation.y = angle;
-                                plantGroup.add(trapGroup);
-                            }
-                            break;
-                            
-                        case 'pitcher_plant':
-                            // Pitcher body
-                            const pitcherGeometry = new THREE.CylinderGeometry(potSize * 0.2, potSize * 0.35, potSize * 0.8, 8);
-                            const pitcherMaterial = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
-                            const pitcher = new THREE.Mesh(pitcherGeometry, pitcherMaterial);
-                            pitcher.position.y = potSize * 1.0;
-                            pitcher.rotation.z = Math.PI * 0.1; // Slight lean
-                            plantGroup.add(pitcher);
-                            
-                            // Pitcher rim
-                            const rimGeometry = new THREE.TorusGeometry(potSize * 0.25, potSize * 0.05, 6, 12);
-                            const rimMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
-                            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-                            rim.position.y = potSize * 1.3;
-                            plantGroup.add(rim);
-                            
-                            // Lid
-                            const lidGeometry = new THREE.SphereGeometry(potSize * 0.3, 8, 6);
-                            const lidMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
-                            const lid = new THREE.Mesh(lidGeometry, lidMaterial);
-                            lid.scale.set(1, 0.3, 1);
-                            lid.position.set(0, potSize * 1.4, potSize * 0.1);
-                            lid.rotation.x = -0.3;
-                            plantGroup.add(lid);
-                            break;
-                            
-                        case 'sundew':
-                            // Rosette of leaves
-                            for (let l = 0; l < 8; l++) {
-                                const leafGeometry = new THREE.PlaneGeometry(potSize * 0.4, potSize * 0.1);
-                                const leafMaterial = new THREE.MeshLambertMaterial({ 
-                                    color: 0x90EE90,
-                                    side: THREE.DoubleSide 
-                                });
-                                const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
-                                
-                                const angle = (l / 8) * Math.PI * 2;
-                                leaf.position.set(
-                                    Math.cos(angle) * potSize * 0.3,
-                                    potSize * 0.6,
-                                    Math.sin(angle) * potSize * 0.3
-                                );
-                                leaf.rotation.z = angle + Math.PI / 2;
-                                leaf.rotation.x = -Math.PI / 6; // Slight upward angle
-                                
-                                // Dewdrops (tiny spheres)
-                                for (let d = 0; d < 5; d++) {
-                                    const dewdrop = new THREE.Mesh(
-                                        new THREE.SphereGeometry(0.01),
-                                        new THREE.MeshBasicMaterial({ 
-                                            color: 0x00FFFF,
-                                            transparent: true,
-                                            opacity: 0.8
-                                        })
-                                    );
-                                    dewdrop.position.set(
-                                        (Math.random() - 0.5) * potSize * 0.3,
-                                        0.02,
-                                        (Math.random() - 0.5) * potSize * 0.08
-                                    );
-                                    leaf.add(dewdrop);
-                                }
-                                
-                                plantGroup.add(leaf);
-                            }
-                            break;
-                            
-                        case 'nepenthes':
-                            // Main vine
-                            const vineGeometry = new THREE.CylinderGeometry(0.01, 0.02, potSize * 1.2, 6);
-                            const vineMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
-                            const vine = new THREE.Mesh(vineGeometry, vineMaterial);
-                            vine.position.y = potSize * 1.2;
-                            plantGroup.add(vine);
-                            
-                            // Leaves and small pitchers
-                            for (let n = 0; n < 3; n++) {
-                                // Leaf
-                                const leafGeometry = new THREE.PlaneGeometry(potSize * 0.3, potSize * 0.5);
-                                const leafMaterial = new THREE.MeshLambertMaterial({ 
-                                    color: 0x32CD32,
-                                    side: THREE.DoubleSide 
-                                });
-                                const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
-                                leaf.position.set(0, potSize * (0.8 + n * 0.3), 0);
-                                leaf.rotation.y = (n / 3) * Math.PI * 2;
-                                plantGroup.add(leaf);
-                                
-                                // Small hanging pitcher
-                                const smallPitcher = new THREE.Mesh(
-                                    new THREE.CylinderGeometry(potSize * 0.08, potSize * 0.12, potSize * 0.2, 6),
-                                    new THREE.MeshLambertMaterial({ color: 0x800080 })
-                                );
-                                smallPitcher.position.set(
-                                    Math.cos(leaf.rotation.y) * potSize * 0.2,
-                                    potSize * (0.6 + n * 0.3),
-                                    Math.sin(leaf.rotation.y) * potSize * 0.2
-                                );
-                                plantGroup.add(smallPitcher);
-                            }
-                            break;
-                    }
-                    
-                    plantGroup.userData = {
-                        type: 'plant',
-                        species: plantType,
-                        grabbable: true,
-                        interactable: true
-                    };
-                    
-                    // Register with plant care system if available
-                    if (window.plantCareSystem) {
-                        window.plantCareSystem.registerPlant(plantGroup, plantType);
-                    }
-                    
-                    return plantGroup;
-                };
-                
-                // CREATE STORES AND NPCS
-                const createStore = (x, z, width, height, color, storeName, npcName) => {
-                    // Store building
-                    const storeGroup = new THREE.Group();
-                    
-                    // Store base/floor
-                    const storeFloor = new THREE.Mesh(
-                        new THREE.BoxGeometry(width, 0.2, height),
-                        new THREE.MeshLambertMaterial({ color: 0x8B4513 })
-                    );
-                    storeFloor.position.set(x, 0.1, z);
-                    storeGroup.add(storeFloor);
-                    
-                    // Store walls
-                    const wallMaterial = new THREE.MeshLambertMaterial({ color: color });
-                    
-                    // Front wall with door
-                    const frontWall = new THREE.Mesh(
-                        new THREE.BoxGeometry(width, 4, 0.2),
-                        wallMaterial
-                    );
-                    frontWall.position.set(x, 2, z + height/2);
-                    storeGroup.add(frontWall);
-                    
-                    // Door opening
-                    const door = new THREE.Mesh(
-                        new THREE.BoxGeometry(2, 3, 0.3),
-                        new THREE.MeshLambertMaterial({ color: 0x654321 })
-                    );
-                    door.position.set(x, 1.5, z + height/2);
-                    storeGroup.add(door);
-                    
-                    // Invisible checkout zone at store exit
-                    const checkoutZone = new THREE.Mesh(
-                        new THREE.BoxGeometry(3, 4, 2),
-                        new THREE.MeshBasicMaterial({ 
-                            color: 0x00FF00,
-                            transparent: true,
-                            opacity: 0.0 // Completely invisible
-                        })
-                    );
-                    checkoutZone.position.set(x, 2, z + height/2 + 1.5); // Just outside the door
-                    checkoutZone.userData = {
-                        type: 'checkout_zone',
-                        storeName: storeName,
-                        npcName: npcName
-                    };
-                    storeGroup.add(checkoutZone);
-                    
-                    // Back wall
-                    const backWall = new THREE.Mesh(
-                        new THREE.BoxGeometry(width, 4, 0.2),
-                        wallMaterial
-                    );
-                    backWall.position.set(x, 2, z - height/2);
-                    storeGroup.add(backWall);
-                    
-                    // Side walls
-                    const leftWall = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.2, 4, height),
-                        wallMaterial
-                    );
-                    leftWall.position.set(x - width/2, 2, z);
-                    storeGroup.add(leftWall);
-                    
-                    const rightWall = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.2, 4, height),
-                        wallMaterial
-                    );
-                    rightWall.position.set(x + width/2, 2, z);
-                    storeGroup.add(rightWall);
-                    
-                    // Roof
-                    const roof = new THREE.Mesh(
-                        new THREE.BoxGeometry(width + 0.5, 0.3, height + 0.5),
-                        new THREE.MeshLambertMaterial({ color: 0x8B0000 })
-                    );
-                    roof.position.set(x, 4.2, z);
-                    storeGroup.add(roof);
-                    
-                    // Store sign
-                    const signGeometry = new THREE.PlaneGeometry(width * 0.8, 0.8);
-                    const signMaterial = new THREE.MeshLambertMaterial({ 
-                        color: 0xffffff,
-                        side: THREE.DoubleSide 
-                    });
-                    const sign = new THREE.Mesh(signGeometry, signMaterial);
-                    sign.position.set(x, 3.5, z + height/2 + 0.1);
-                    storeGroup.add(sign);
-                    
-                    // Add realistic plants inside store with pricing
-                    const plantTypes = ['venus_flytrap', 'pitcher_plant', 'sundew', 'nepenthes'];
-                    const plantPrices = {
-                        'venus_flytrap': 19.99,
-                        'pitcher_plant': 45.99,
-                        'sundew': 12.99,
-                        'nepenthes': 89.99
-                    };
-                    
-                    for (let i = 0; i < 8; i++) {
-                        const plantType = plantTypes[Math.floor(Math.random() * plantTypes.length)];
-                        const plant = createRealisticPlant(plantType, 0.2); // Smaller for indoor display
-                        plant.position.set(
-                            x + (Math.random() - 0.5) * (width - 2),
-                            0.5,
-                            z + (Math.random() - 0.5) * (height - 2)
-                        );
-                        plant.scale.setScalar(0.8);
-                        
-                        // Mark as store plant with price
-                        plant.userData.isStorePlant = true;
-                        plant.userData.price = plantPrices[plantType];
-                        plant.userData.storeName = storeName;
-                        plant.userData.originalColor = plant.children[0]?.material?.color?.getHex() || 0x228B22;
-                        
-                        storeGroup.add(plant);
-                    }
-                    
-                    // Store userData for interaction
-                    storeGroup.userData = {
-                        type: 'store',
-                        storeName: storeName,
-                        interactable: true,
-                        npcName: npcName
-                    };
-                    
-                    scene.add(storeGroup);
-                    
-                    // CREATE NPC OUTSIDE STORE
-                    const npc = new THREE.Group();
-                    
-                    // NPC body
-                    const body = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.3, 0.3, 1.5),
-                        new THREE.MeshLambertMaterial({ color: 0x4169E1 })
-                    );
-                    body.position.y = 0.75;
-                    npc.add(body);
-                    
-                    // NPC head
-                    const head = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.2),
-                        new THREE.MeshLambertMaterial({ color: 0xFFDBAC })
-                    );
-                    head.position.y = 1.7;
-                    npc.add(head);
-                    
-                    // NPC arms
-                    const leftArm = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.1, 0.1, 0.8),
-                        new THREE.MeshLambertMaterial({ color: 0x4169E1 })
-                    );
-                    leftArm.position.set(-0.4, 1, 0);
-                    leftArm.rotation.z = 0.3;
-                    npc.add(leftArm);
-                    
-                    const rightArm = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.1, 0.1, 0.8),
-                        new THREE.MeshLambertMaterial({ color: 0x4169E1 })
-                    );
-                    rightArm.position.set(0.4, 1, 0);
-                    rightArm.rotation.z = -0.3;
-                    npc.add(rightArm);
-                    
-                    // Position NPC in front of store
-                    npc.position.set(x, 0, z + height/2 + 2);
-                    npc.userData = {
-                        type: 'npc',
-                        name: npcName,
-                        storeName: storeName,
-                        interactable: true,
-                        dialogue: [
-                            `Hello! Welcome to ${storeName}!`,
-                            `I'm ${npcName}, the owner of this store.`,
-                            `Press E to enter the store and browse our selection!`,
-                            `We have the best carnivorous plants on the island!`
-                        ],
-                        currentDialogue: 0
-                    };
-                    
-                    scene.add(npc);
-                    
-                    return { store: storeGroup, npc: npc };
-                };
-                
-                // Create multiple stores distributed across different levels
-                console.log('🏪 Creating stores and NPCs across three island levels...');
-                
-                // Level 1 stores (ground level)
-                createStore(-45, 10, 8, 6, 0x90EE90, "Plant Paradise", "Flora");
-                createStore(45, 10, 8, 6, 0xFF69B4, "Exotic Plants Co", "Botanical Bill");  
-                createStore(-45, -30, 8, 6, 0x228B22, "Garden Supply", "Green Thumb Gary");
-                createStore(45, -30, 8, 6, 0xFFD700, "Rare Species Store", "Carnivore Kate");
-                
-                // Level 2 stores (8 units high)
-                const createElevatedStore = (x, z, width, height, color, storeName, npcName, elevation) => {
-                    const result = createStore(x, z, width, height, color, storeName, npcName);
-                    // Elevate the store and NPC
-                    if (result.store) result.store.position.y += elevation;
-                    if (result.npc) result.npc.position.y += elevation;
-                    return result;
-                };
-                
-                createElevatedStore(-25, 25, 6, 5, 0xFF6347, "Plant Hospital", "Dr. Plantsworth", 8);
-                createElevatedStore(25, 25, 6, 5, 0x9370DB, "Seed Shop", "Seedling Sam", 8);
-                createElevatedStore(0, -25, 6, 5, 0x20B2AA, "Tool Emporium", "Handy Hannah", 8);
-                
-                // Level 3 store (16 units high) - exclusive top level store
-                createElevatedStore(0, 0, 5, 4, 0xFF1493, "Elite Specimens", "Master Botanist", 16);
-                
-                // DEPARTMENT STORE - Special large store with all items
-                const createDepartmentStore = (x, z, elevation = 0) => {
-                    const storeGroup = new THREE.Group();
-                    
-                    // Large store building (twice normal size)
-                    const storeGeometry = new THREE.BoxGeometry(12, 6, 8); // Much larger
-                    const storeMaterial = new THREE.MeshLambertMaterial({ color: 0x4169E1 }); // Royal blue
-                    const store = new THREE.Mesh(storeGeometry, storeMaterial);
-                    store.position.set(x, 3 + elevation, z);
-                    storeGroup.add(store);
-                    
-                    // Roof
-                    const roofGeometry = new THREE.ConeGeometry(8, 2, 4);
-                    const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-                    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                    roof.position.set(x, 7 + elevation, z);
-                    roof.rotation.y = Math.PI / 4;
-                    storeGroup.add(roof);
-                    
-                    // Sign
-                    const signGeometry = new THREE.PlaneGeometry(8, 1.5);
-                    const signMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-                    const sign = new THREE.Mesh(signGeometry, signMaterial);
-                    sign.position.set(x, 6.5 + elevation, z + 4.1);
-                    storeGroup.add(sign);
-                    
-                    // Store data
-                    store.userData = {
-                        type: 'store',
-                        storeName: 'Department Store',
-                        npcName: 'Store Manager',
-                        isDepartmentStore: true
-                    };
-                    
-                    // Add department store items inside
-                    createDepartmentStoreItems(x, z, elevation, storeGroup);
-                    
-                    // Invisible checkout zone at store exit
-                    const checkoutZone = new THREE.Mesh(
-                        new THREE.BoxGeometry(3, 4, 2),
-                        new THREE.MeshBasicMaterial({ 
-                            color: 0x00FF00,
-                            transparent: true,
-                            opacity: 0.0
-                        })
-                    );
-                    checkoutZone.position.set(x, 2 + elevation, z + 5);
-                    checkoutZone.userData = {
-                        type: 'checkout_zone',
-                        storeName: 'Department Store',
-                        npcName: 'Store Manager'
-                    };
-                    storeGroup.add(checkoutZone);
-                    
-                    scene.add(storeGroup);
-                    return storeGroup;
-                };
-                
-                function createDepartmentStoreItems(x, z, elevation, storeGroup) {
-                    const items = [
-                        // Tools section
-                        { type: 'flashlight', price: 15.99, pos: [-4, 1.5, -2] },
-                        { type: 'shovel', price: 24.99, pos: [-3, 1.5, -2] },
-                        { type: 'watering_can', price: 12.99, pos: [-2, 1.5, -2] },
-                        { type: 'pruning_shears', price: 18.99, pos: [-1, 1.5, -2] },
-                        
-                        // Electronics section
-                        { type: 'bug_zapper', price: 45.99, pos: [1, 1.5, -2] },
-                        { type: 'timer', price: 22.99, pos: [2, 1.5, -2] },
-                        { type: 'thermometer', price: 8.99, pos: [3, 1.5, -2] },
-                        { type: 'hygrometer', price: 12.99, pos: [4, 1.5, -2] },
-                        
-                        // Supplies section
-                        { type: 'fertilizer', price: 9.99, pos: [-4, 1.5, 0] },
-                        { type: 'soil_bag', price: 7.99, pos: [-3, 1.5, 0] },
-                        { type: 'plant_pot', price: 5.99, pos: [-2, 1.5, 0] },
-                        { type: 'stakes', price: 4.99, pos: [-1, 1.5, 0] },
-                        
-                        // Special items
-                        { type: 'store_kit', price: 1000.00, pos: [1, 1.5, 0] },
-                        { type: 'expansion_kit', price: 500.00, pos: [2, 1.5, 0] },
-                        { type: 'server_pass', price: 25.00, pos: [3, 1.5, 0] },
-                        { type: 'premium_pass', price: 100.00, pos: [4, 1.5, 0] }
-                    ];
-                    
-                    items.forEach(itemData => {
-                        const item = createDepartmentItem(itemData.type, itemData.price);
-                        item.position.set(
-                            x + itemData.pos[0],
-                            elevation + itemData.pos[1],
-                            z + itemData.pos[2]
-                        );
-                        storeGroup.add(item);
-                    });
-                }
-                
-                function createDepartmentItem(type, price) {
-                    let item;
-                    
-                    switch (type) {
-                        case 'flashlight':
-                            item = createFlashlight();
-                            break;
-                        case 'bug_zapper':
-                            item = createBugZapper();
-                            break;
-                        case 'store_kit':
-                            item = new THREE.Mesh(
-                                new THREE.BoxGeometry(0.3, 0.3, 0.3),
-                                new THREE.MeshLambertMaterial({ color: 0xFFD700 })
-                            );
-                            break;
-                        case 'expansion_kit':
-                            item = new THREE.Mesh(
-                                new THREE.BoxGeometry(0.25, 0.25, 0.25),
-                                new THREE.MeshLambertMaterial({ color: 0x32CD32 })
-                            );
-                            break;
-                        default:
-                            // Generic item
-                            item = new THREE.Mesh(
-                                new THREE.BoxGeometry(0.15, 0.15, 0.15),
-                                new THREE.MeshLambertMaterial({ color: 0x888888 })
-                            );
-                    }
-                    
-                    item.userData = {
-                        type: type,
-                        isStorePlant: true,
-                        price: price,
-                        storeName: 'Department Store'
-                    };
-                    
-                    return item;
-                }
-                
-                // Create the department store
-                console.log('🏬 Creating Department Store...');
-                createDepartmentStore(-30, -30, 0);
-                
-                // CREATE TELEPORTATION PADS
-                const createTeleportPad = (x, z, targetX, targetZ, padName) => {
-                    const padGroup = new THREE.Group();
-                    
-                    // Base pad
-                    const padBase = new THREE.Mesh(
-                        new THREE.CylinderGeometry(1.5, 1.5, 0.2, 8),
-                        new THREE.MeshLambertMaterial({ color: 0x00FFFF })
-                    );
-                    padBase.position.set(x, 0.1, z);
-                    padGroup.add(padBase);
-                    
-                    // Glowing center
-                    const padCenter = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.8, 0.8, 0.3, 8),
-                        new THREE.MeshBasicMaterial({ 
-                            color: 0x00FF00,
-                            transparent: true,
-                            opacity: 0.8
-                        })
-                    );
-                    padCenter.position.set(x, 0.3, z);
-                    padGroup.add(padCenter);
-                    
-                    // Floating particles
-                    for (let i = 0; i < 6; i++) {
-                        const particle = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.05),
-                            new THREE.MeshBasicMaterial({ color: 0xFFFF00 })
-                        );
-                        const angle = (i / 6) * Math.PI * 2;
-                        particle.position.set(
-                            x + Math.cos(angle) * 1,
-                            0.5 + Math.sin(Date.now() * 0.001 + i) * 0.2,
-                            z + Math.sin(angle) * 1
-                        );
-                        padGroup.add(particle);
-                    }
-                    
-                    padGroup.userData = {
-                        type: 'teleport_pad',
-                        padName: padName,
-                        targetX: targetX,
-                        targetZ: targetZ,
-                        interactable: true
-                    };
-                    
-                    scene.add(padGroup);
-                    return padGroup;
-                };
-                
-                // Create teleport network across levels
-                console.log('🌀 Creating multi-level teleportation network...');
-                
-                // Level 1 teleport pads
-                createTeleportPad(-20, 0, 0, 0, "West Hub → Central");
-                createTeleportPad(20, 0, 0, 0, "East Hub → Central");
-                createTeleportPad(0, -45, 0, 0, "South Hub → Central");
-                
-                // Level 2 teleport pads (elevated)
-                const createElevatedTeleportPad = (x, z, targetX, targetZ, padName, elevation) => {
-                    const pad = createTeleportPad(x, z, targetX, targetZ, padName);
-                    pad.position.y += elevation;
-                    return pad;
-                };
-                
-                createElevatedTeleportPad(0, 20, 0, 0, "Level 2 North → Central", 8);
-                createElevatedTeleportPad(-15, 0, 0, 0, "Level 2 West → Central", 8);
-                createElevatedTeleportPad(15, 0, 0, 0, "Level 2 East → Central", 8);
-                
-                // Level 3 teleport pad (top level)
-                createElevatedTeleportPad(0, 0, 0, 0, "Elite Level → Central", 16);
-                
-                // MONEY SYSTEM
-                let playerMoney = (savedState && savedState.playerMoney) ? savedState.playerMoney : 50.00; // Starting money or loaded money
-                console.log('💰 Player money initialized:', playerMoney);
-                
-                // CREATE COLLECTIBLE COINS
-                const createCoin = (x, z) => {
-                    const coinGroup = new THREE.Group();
-                    
-                    // Main coin
-                    const coin = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12),
-                        new THREE.MeshBasicMaterial({ color: 0xFFD700 })
-                    );
-                    coin.position.set(x, 0.3, z);
-                    coin.rotation.x = Math.PI / 2; // Lay flat
-                    coinGroup.add(coin);
-                    
-                    // Glowing effect
-                    const glow = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.2, 8, 8),
-                        new THREE.MeshBasicMaterial({ 
-                            color: 0xFFFF00,
-                            transparent: true,
-                            opacity: 0.3
-                        })
-                    );
-                    glow.position.set(x, 0.3, z);
-                    coinGroup.add(glow);
-                    
-                    // Floating sparkles
-                    for (let i = 0; i < 3; i++) {
-                        const sparkle = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.02),
-                            new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
-                        );
-                        const angle = (i / 3) * Math.PI * 2;
-                        sparkle.position.set(
-                            x + Math.cos(angle) * 0.3,
-                            0.5 + Math.sin(Date.now() * 0.002 + i) * 0.1,
-                            z + Math.sin(angle) * 0.3
-                        );
-                        coinGroup.add(sparkle);
-                    }
-                    
-                    coinGroup.userData = {
-                        type: 'coin',
-                        value: 1.00,
-                        interactable: true,
-                        grabbable: true
-                    };
-                    
-                    scene.add(coinGroup);
-                    return coinGroup;
-                };
-                
-                // RESPAWN COIN FUNCTION
-                const spawnNewCoin = () => {
-                    let x, z;
-                    let validPosition = false;
-                    let attempts = 0;
-                    
-                    // Find valid spawn position (not too close to stores/objects)
-                    while (!validPosition && attempts < 15) {
-                        x = (Math.random() - 0.5) * 120; // Spread across bigger island
-                        z = (Math.random() - 0.5) * 120;
-                        
-                        // Check if position is clear of stores and major objects
-                        validPosition = true;
-                        
-                        // Don't spawn too close to stores (basic check)
-                        if ((Math.abs(x - 35) < 8 && Math.abs(z - 10) < 8) || // Exotic Plants
-                            (Math.abs(x + 35) < 8 && Math.abs(z - 10) < 8) || // Plant Paradise
-                            (Math.abs(x - 35) < 8 && Math.abs(z + 20) < 8) || // Rare Species
-                            (Math.abs(x + 35) < 8 && Math.abs(z + 20) < 8) || // Garden Supply
-                            (Math.abs(x) < 8 && Math.abs(z - 40) < 8) ||      // Plant Hospital
-                            (Math.abs(x - 20) < 6 && Math.abs(z - 35) < 6) || // Seed Shop
-                            (Math.abs(x - 20) < 6 && Math.abs(z - 35) < 6) || // Tool Emporium
-                            (Math.abs(x) < 10 && Math.abs(z) < 10)) {         // Central area
-                            validPosition = false;
-                        }
-                        
-                        // Also check if too close to player (avoid spawning right next to them)
-                        if (camera && camera.position) {
-                            const distanceToPlayer = Math.sqrt(
-                                (x - camera.position.x) ** 2 + (z - camera.position.z) ** 2
-                            );
-                            if (distanceToPlayer < 10) { // Must be at least 10 units away from player
-                                validPosition = false;
-                            }
-                        }
-                        
-                        attempts++;
-                    }
-                    
-                    if (validPosition) {
-                        const newCoin = createCoin(x, z);
-                        coins.push(newCoin);
-                        window.game.coins = coins; // Update global reference
-                        console.log('✨ New coin spawned at:', x.toFixed(1), z.toFixed(1));
-                        
-                        // Create sparkle effect at spawn location
-                        const spawnEffect = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.5),
-                            new THREE.MeshBasicMaterial({ 
-                                color: 0x00FFFF,
-                                transparent: true,
-                                opacity: 0.6
-                            })
-                        );
-                        spawnEffect.position.set(x, 0.5, z);
-                        scene.add(spawnEffect);
-                        
-                        // Animate spawn effect
-                        let spawnScale = 0.1;
-                        const spawnAnimation = setInterval(() => {
-                            spawnScale += 0.1;
-                            spawnEffect.scale.setScalar(spawnScale);
-                            spawnEffect.material.opacity -= 0.05;
-                            
-                            if (spawnEffect.material.opacity <= 0) {
-                                scene.remove(spawnEffect);
-                                clearInterval(spawnAnimation);
-                            }
-                        }, 50);
-                    } else {
-                        console.log('⚠️ Could not find valid position for new coin, retrying...');
-                        // Retry after a short delay
-                        setTimeout(() => spawnNewCoin(), 1000);
-                    }
-                };
-                
-                // Spawn coins randomly across the bigger island
-                console.log('💰 Spawning collectible coins across the bigger island...');
-                const coins = [];
-                
-                for (let i = 0; i < 40; i++) { // More coins for bigger map
-                    let x, z;
-                    let validPosition = false;
-                    let attempts = 0;
-                    
-                    // Find valid spawn position (not too close to stores/objects)
-                    while (!validPosition && attempts < 10) {
-                        x = (Math.random() - 0.5) * 120; // Spread across bigger island
-                        z = (Math.random() - 0.5) * 120;
-                        
-                        // Check if position is clear of stores and major objects
-                        validPosition = true;
-                        
-                        // Don't spawn too close to stores (basic check)
-                        if ((Math.abs(x - 35) < 8 && Math.abs(z - 10) < 8) || // Exotic Plants
-                            (Math.abs(x + 35) < 8 && Math.abs(z - 10) < 8) || // Plant Paradise
-                            (Math.abs(x - 35) < 8 && Math.abs(z + 20) < 8) || // Rare Species
-                            (Math.abs(x + 35) < 8 && Math.abs(z + 20) < 8) || // Garden Supply
-                            (Math.abs(x) < 8 && Math.abs(z - 40) < 8) ||      // Plant Hospital
-                            (Math.abs(x - 20) < 6 && Math.abs(z - 35) < 6) || // Seed Shop
-                            (Math.abs(x - 20) < 6 && Math.abs(z - 35) < 6) || // Tool Emporium
-                            (Math.abs(x) < 10 && Math.abs(z) < 10)) {         // Central area
-                            validPosition = false;
-                        }
-                        
-                        attempts++;
-                    }
-                    
-                    if (validPosition) {
-                        const coin = createCoin(x, z);
-                        coins.push(coin);
-                    }
-                }
-                
-                // CREATE MONEY DISPLAY
-                const createMoneyDisplay = () => {
-                    const moneyDisplay = document.createElement('div');
-                    moneyDisplay.id = 'money-display';
-                    moneyDisplay.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: rgba(0, 0, 0, 0.8);
-                        color: #FFD700;
-                        padding: 15px 20px;
-                        border-radius: 10px;
-                        font-family: Arial, sans-serif;
-                        font-size: 20px;
-                        font-weight: bold;
-                        z-index: 1000;
-                        border: 2px solid #FFD700;
-                        text-align: center;
-                    `;
-                    
-                    moneyDisplay.innerHTML = `💰 $${playerMoney.toFixed(2)}`;
-                    document.body.appendChild(moneyDisplay);
-                    return moneyDisplay;
-                };
-                
-                // CREATE SAVE BUTTON IN GAME
-                const createSaveButton = () => {
-                    const saveButton = document.createElement('button');
-                    saveButton.innerHTML = '💾 Save';
-                    saveButton.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        left: 20px;
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 10px 15px;
-                        border: 2px solid #4CAF50;
-                        border-radius: 5px;
-                        font-family: Arial, sans-serif;
-                        font-size: 16px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        z-index: 1000;
-                    `;
-                    
-                    saveButton.onclick = saveGame;
-                    saveButton.onmouseover = () => saveButton.style.background = 'rgba(76, 175, 80, 0.8)';
-                    saveButton.onmouseout = () => saveButton.style.background = 'rgba(0, 0, 0, 0.8)';
-                    
-                    document.body.appendChild(saveButton);
-                    return saveButton;
-                };
-                
-                const moneyDisplay = createMoneyDisplay();
-                const saveButton = createSaveButton();
-                
-                // CREATE INVENTORY AND HOLDING UI
-                createInventoryUI();
-                createHeldItemDisplay();
-                console.log('📦 Inventory system initialized');
-                
-                // CREATE SHOPPING CART DISPLAY
-                const createCartDisplay = () => {
-                    const cartDisplay = document.createElement('div');
-                    cartDisplay.id = 'cart-display';
-                    cartDisplay.style.cssText = `
-                        position: fixed;
-                        bottom: 20px;
-                        right: 20px;
-                        background: rgba(0, 0, 0, 0.9);
-                        color: white;
-                        padding: 15px;
-                        border-radius: 10px;
-                        font-family: Arial, sans-serif;
-                        font-size: 14px;
-                        z-index: 1000;
-                        min-width: 200px;
-                        border: 2px solid #FF6B35;
-                        display: none;
-                    `;
-                    
-                    cartDisplay.innerHTML = `
-                        <h3 style="margin: 0 0 10px 0; color: #FF6B35;">🛒 Shopping Cart</h3>
-                        <div id="cart-items"></div>
-                        <div id="cart-total" style="border-top: 1px solid #555; margin-top: 10px; padding-top: 10px; font-weight: bold;"></div>
-                        <div style="margin-top: 10px; font-size: 12px; color: #AAA;">
-                            Walk through store exit to auto-pay
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(cartDisplay);
-                    return cartDisplay;
-                };
-                
-                const cartDisplay = createCartDisplay();
-                
-                // UPDATE CART DISPLAY
-                function updateCartDisplay() {
-                    const cartItemsDiv = document.getElementById('cart-items');
-                    const cartTotalDiv = document.getElementById('cart-total');
-                    
-                    if (shoppingCart.length === 0) {
-                        cartDisplay.style.display = 'none';
-                        return;
-                    }
-                    
-                    cartDisplay.style.display = 'block';
-                    
-                    // Update items list
-                    cartItemsDiv.innerHTML = shoppingCart.map(item => 
-                        `<div style="margin-bottom: 5px;">
-                            ${item.species.replace('_', ' ')} - $${item.price.toFixed(2)}
-                        </div>`
-                    ).join('');
-                    
-                    // Update total
-                    cartTotalDiv.innerHTML = `Total: $${totalCartValue.toFixed(2)}`;
-                    
-                    // Color code based on affordability
-                    if (totalCartValue > playerMoney) {
-                        cartTotalDiv.style.color = '#FF4444'; // Red if can't afford
-                    } else {
-                        cartTotalDiv.style.color = '#4CAF50'; // Green if can afford
-                    }
-                }
-                
-                // NPC DIALOGUE SYSTEM
-                function showNPCDialogue(npcName, message, duration = 3000) {
-                    // Remove existing dialogue
-                    const existingDialogue = document.getElementById('npc-dialogue');
-                    if (existingDialogue) {
-                        existingDialogue.remove();
-                    }
-                    
-                    const dialogueBox = document.createElement('div');
-                    dialogueBox.id = 'npc-dialogue';
-                    dialogueBox.style.cssText = `
-                        position: fixed;
-                        bottom: 100px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        background: rgba(0, 0, 0, 0.9);
-                        color: white;
-                        padding: 15px 20px;
-                        border-radius: 10px;
-                        font-family: Arial, sans-serif;
-                        font-size: 16px;
-                        z-index: 1000;
-                        border: 2px solid #FFD700;
-                        max-width: 400px;
-                        text-align: center;
-                    `;
-                    
-                    dialogueBox.innerHTML = `
-                        <strong style="color: #FFD700;">${npcName}:</strong><br>
-                        "${message}"
-                    `;
-                    
-                    document.body.appendChild(dialogueBox);
-                    
-                    // Auto remove after duration
-                    setTimeout(() => {
-                        if (dialogueBox.parentNode) {
-                            dialogueBox.remove();
-                        }
-                    }, duration);
-                }
-                
-                // CHECKOUT SYSTEM
-                function attemptCheckout(storeName, npcName) {
-                    if (shoppingCart.length === 0) {
-                        showNPCDialogue(npcName, "You haven't picked anything yet! Browse around and grab what you like.");
-                        return false;
-                    }
-                    
-                    if (totalCartValue > playerMoney) {
-                        showNPCDialogue(npcName, `Sorry, you need $${totalCartValue.toFixed(2)} but only have $${playerMoney.toFixed(2)}. Put some items back or come back with more money!`);
-                        return false;
-                    }
-                    
-                    // Process payment
-                    playerMoney -= totalCartValue;
-                    window.game.playerMoney = playerMoney;
-                    moneyDisplay.innerHTML = `💰 $${playerMoney.toFixed(2)}`;
-                    
-                    // Success message
-                    showNPCDialogue(npcName, `Thank you for your purchase! That'll be $${totalCartValue.toFixed(2)}. Enjoy your new plants!`);
-                    
-                    // Remove purchased plants from store and clear cart
-                    shoppingCart.forEach(item => {
-                        if (item.plant.parent) {
-                            item.plant.parent.remove(item.plant);
-                        }
-                    });
-                    
-                    // Clear cart
-                    shoppingCart = [];
-                    totalCartValue = 0;
-                    currentStore = null;
-                    updateCartDisplay();
-                    
-                    console.log(`💳 Purchase completed at ${storeName} for $${totalCartValue.toFixed(2)}`);
-                    return true;
-                }
-                
-                // CREATE PLAYER CHARACTER MODEL (visible when zoomed out)
-                const createPlayerCharacter = () => {
-                    const playerGroup = new THREE.Group();
-                    
-                    // Player body
-                    const bodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.6);
-                    const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x4169E1 }); // Royal blue
-                    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-                    body.position.y = 0.8;
-                    playerGroup.add(body);
-                    
-                    // Player head
-                    const headGeometry = new THREE.SphereGeometry(0.25);
-                    const headMaterial = new THREE.MeshLambertMaterial({ color: 0xFFDBAC }); // Skin tone
-                    const head = new THREE.Mesh(headGeometry, headMaterial);
-                    head.position.y = 1.85;
-                    playerGroup.add(head);
-                    
-                    // Player arms
-                    const armGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.8);
-                    const armMaterial = new THREE.MeshLambertMaterial({ color: 0x4169E1 });
-                    
-                    const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-                    leftArm.position.set(-0.4, 0.8, 0);
-                    leftArm.rotation.z = 0.2;
-                    playerGroup.add(leftArm);
-                    
-                    const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-                    rightArm.position.set(0.4, 0.8, 0);
-                    rightArm.rotation.z = -0.2;
-                    playerGroup.add(rightArm);
-                    
-                    // Player legs
-                    const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8);
-                    const legMaterial = new THREE.MeshLambertMaterial({ color: 0x2F4F4F });
-                    
-                    const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
-                    leftLeg.position.set(-0.15, 0.2, 0);
-                    playerGroup.add(leftLeg);
-                    
-                    const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
-                    rightLeg.position.set(0.15, 0.2, 0);
-                    playerGroup.add(rightLeg);
-                    
-                    // Hat for style
-                    const hatGeometry = new THREE.CylinderGeometry(0.3, 0.25, 0.1);
-                    const hatMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-                    const hat = new THREE.Mesh(hatGeometry, hatMaterial);
-                    hat.position.y = 2.05;
-                    playerGroup.add(hat);
-                    
-                    playerGroup.userData = { type: 'player_character' };
-                    playerGroup.visible = false; // Hidden by default (first person)
-                    
-                    return playerGroup;
-                };
-                
-                const playerCharacter = createPlayerCharacter();
-                scene.add(playerCharacter);
-                
-                // COMPREHENSIVE PLANT CARE SYSTEM
-                class PlantCareSystem {
-                    constructor() {
-                        // Environmental conditions
-                        this.temperature = 22; // Celsius
-                        this.humidity = 65; // Percentage
-                        this.lightIntensity = 50; // Percentage
-                        this.season = 'spring'; // spring, summer, autumn, winter
-                        this.dayLength = 12; // Hours of light per day
-                        this.currentHour = 12; // Current time (0-24)
-                        
-                        // Time tracking
-                        this.gameTime = 0; // Game time in seconds
-                        this.dayDuration = 120; // Real seconds per game day
-                        this.seasonDuration = 30; // Game days per season
-                        this.currentDay = 1;
-                        
-                        // Plant database
-                        this.plants = new Map();
-                        this.plantSpeciesData = this.initializeSpeciesData();
-                        
-                        this.createEnvironmentControls();
-                        this.createPlantCareUI();
-                    }
-                    
-                    initializeSpeciesData() {
-                        return {
-                            'venus_flytrap': {
-                                name: 'Venus Flytrap',
-                                optimalTemp: { min: 20, max: 30 },
-                                optimalHumidity: { min: 50, max: 80 },
-                                lightRequirement: 70,
-                                feedingInterval: 14, // days
-                                dormancyRequired: true,
-                                dormancyTrigger: { temp: 10, lightHours: 8 },
-                                growthStages: ['seed', 'seedling', 'juvenile', 'adult', 'mature'],
-                                maxAge: 365 // days
-                            },
-                            'pitcher_plant': {
-                                name: 'Sarracenia',
-                                optimalTemp: { min: 15, max: 25 },
-                                optimalHumidity: { min: 70, max: 90 },
-                                lightRequirement: 80,
-                                feedingInterval: 21,
-                                dormancyRequired: true,
-                                dormancyTrigger: { temp: 5, lightHours: 6 },
-                                growthStages: ['seed', 'seedling', 'juvenile', 'adult', 'mature'],
-                                maxAge: 730
-                            },
-                            'sundew': {
-                                name: 'Sundew',
-                                optimalTemp: { min: 18, max: 28 },
-                                optimalHumidity: { min: 60, max: 85 },
-                                lightRequirement: 60,
-                                feedingInterval: 7,
-                                dormancyRequired: false,
-                                growthStages: ['seed', 'seedling', 'juvenile', 'adult', 'mature'],
-                                maxAge: 180
-                            },
-                            'nepenthes': {
-                                name: 'Nepenthes',
-                                optimalTemp: { min: 25, max: 35 },
-                                optimalHumidity: { min: 80, max: 95 },
-                                lightRequirement: 40,
-                                feedingInterval: 10,
-                                dormancyRequired: false,
-                                growthStages: ['seed', 'seedling', 'juvenile', 'adult', 'mature'],
-                                maxAge: 1095 // 3 years
-                            }
-                        };
-                    }
-                    
-                    createEnvironmentControls() {
-                        // Create environmental control panel
-                        const controlPanel = document.createElement('div');
-                        controlPanel.id = 'environment-controls';
-                        controlPanel.style.cssText = `
-                            position: fixed;
-                            top: 80px;
-                            left: 20px;
-                            background: rgba(0, 0, 0, 0.9);
-                            color: white;
-                            padding: 15px;
-                            border-radius: 10px;
-                            font-family: Arial, sans-serif;
-                            font-size: 12px;
-                            z-index: 1000;
-                            min-width: 200px;
-                            border: 2px solid #4CAF50;
-                        `;
-                        
-                        controlPanel.innerHTML = `
-                            <h3 style="margin: 0 0 10px 0; color: #4CAF50;">🌡️ Environment Controls</h3>
-                            
-                            <div style="margin-bottom: 8px;">
-                                <label>🌡️ Temperature: <span id="temp-display">${this.temperature}°C</span></label>
-                                <input type="range" id="temp-slider" min="5" max="40" value="${this.temperature}" 
-                                       style="width: 100%; margin-top: 2px;">
-                            </div>
-                            
-                            <div style="margin-bottom: 8px;">
-                                <label>💧 Humidity: <span id="humidity-display">${this.humidity}%</span></label>
-                                <input type="range" id="humidity-slider" min="20" max="100" value="${this.humidity}"
-                                       style="width: 100%; margin-top: 2px;">
-                            </div>
-                            
-                            <div style="margin-bottom: 8px;">
-                                <label>💡 Light: <span id="light-display">${this.lightIntensity}%</span></label>
-                                <input type="range" id="light-slider" min="0" max="100" value="${this.lightIntensity}"
-                                       style="width: 100%; margin-top: 2px;">
-                            </div>
-                            
-                            <div style="margin-bottom: 8px;">
-                                <label>🕐 Day Length: <span id="daylen-display">${this.dayLength}h</span></label>
-                                <input type="range" id="daylen-slider" min="6" max="18" value="${this.dayLength}"
-                                       style="width: 100%; margin-top: 2px;">
-                            </div>
-                            
-                            <div style="margin-bottom: 8px;">
-                                <label>🍂 Season: <span id="season-display">${this.season}</span></label>
-                                <select id="season-select" style="width: 100%; margin-top: 2px;">
-                                    <option value="spring">🌱 Spring</option>
-                                    <option value="summer">☀️ Summer</option>
-                                    <option value="autumn">🍂 Autumn</option>
-                                    <option value="winter">❄️ Winter</option>
-                                </select>
-                            </div>
-                            
-                            <div style="font-size: 10px; color: #AAA; margin-top: 10px;">
-                                <div>⏰ Time: <span id="game-time">Day ${this.currentDay}, ${this.currentHour}:00</span></div>
-                                <div>🌤️ Status: <span id="weather-status">Optimal</span></div>
-                            </div>
-                        `;
-                        
-                        document.body.appendChild(controlPanel);
-                        this.setupEnvironmentListeners();
-                    }
-                    
-                    setupEnvironmentListeners() {
-                        // Temperature control
-                        document.getElementById('temp-slider').addEventListener('input', (e) => {
-                            this.temperature = parseInt(e.target.value);
-                            document.getElementById('temp-display').textContent = `${this.temperature}°C`;
-                            this.updatePlantHealth();
-                        });
-                        
-                        // Humidity control
-                        document.getElementById('humidity-slider').addEventListener('input', (e) => {
-                            this.humidity = parseInt(e.target.value);
-                            document.getElementById('humidity-display').textContent = `${this.humidity}%`;
-                            this.updatePlantHealth();
-                        });
-                        
-                        // Light control
-                        document.getElementById('light-slider').addEventListener('input', (e) => {
-                            this.lightIntensity = parseInt(e.target.value);
-                            document.getElementById('light-display').textContent = `${this.lightIntensity}%`;
-                            this.updateSceneLighting();
-                            this.updatePlantHealth();
-                        });
-                        
-                        // Day length control
-                        document.getElementById('daylen-slider').addEventListener('input', (e) => {
-                            this.dayLength = parseInt(e.target.value);
-                            document.getElementById('daylen-display').textContent = `${this.dayLength}h`;
-                            this.updatePlantHealth();
-                        });
-                        
-                        // Season control
-                        document.getElementById('season-select').addEventListener('change', (e) => {
-                            this.season = e.target.value;
-                            document.getElementById('season-display').textContent = this.season;
-                            this.applySeasonalEffects();
-                        });
-                    }
-                    
-                    createPlantCareUI() {
-                        // Create plant care panel
-                        const carePanel = document.createElement('div');
-                        carePanel.id = 'plant-care-panel';
-                        carePanel.style.cssText = `
-                            position: fixed;
-                            top: 80px;
-                            right: 20px;
-                            background: rgba(0, 0, 0, 0.9);
-                            color: white;
-                            padding: 15px;
-                            border-radius: 10px;
-                            font-family: Arial, sans-serif;
-                            font-size: 12px;
-                            z-index: 1000;
-                            min-width: 250px;
-                            border: 2px solid #FF6B35;
-                            max-height: 400px;
-                            overflow-y: auto;
-                        `;
-                        
-                        carePanel.innerHTML = `
-                            <h3 style="margin: 0 0 10px 0; color: #FF6B35;">🌱 Plant Care Center</h3>
-                            <div id="plant-list-care">
-                                <p style="color: #AAA;">No plants selected. Press G near a plant to inspect it.</p>
-                            </div>
-                        `;
-                        
-                        document.body.appendChild(carePanel);
-                    }
-                    
-                    registerPlant(plantObject, species) {
-                        const plantId = `plant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                        const plantData = {
-                            id: plantId,
-                            species: species,
-                            health: 100,
-                            age: 0, // days
-                            stage: 0, // growth stage index
-                            lastFed: 0,
-                            isInDormancy: false,
-                            needsFeeding: false,
-                            stressFactors: [],
-                            position: plantObject.position.clone(),
-                            mesh: plantObject
-                        };
-                        
-                        this.plants.set(plantId, plantData);
-                        plantObject.userData.plantId = plantId;
-                        plantObject.userData.plantCare = plantData;
-                        
-                        console.log(`🌱 Registered ${species} with ID: ${plantId}`);
-                        return plantData;
-                    }
-                    
-                    updatePlantHealth() {
-                        this.plants.forEach((plant, plantId) => {
-                            const speciesData = this.plantSpeciesData[plant.species];
-                            if (!speciesData) return;
-                            
-                            plant.stressFactors = [];
-                            let healthChange = 0;
-                            
-                            // Temperature stress
-                            if (this.temperature < speciesData.optimalTemp.min) {
-                                plant.stressFactors.push('Cold stress');
-                                healthChange -= 2;
-                            } else if (this.temperature > speciesData.optimalTemp.max) {
-                                plant.stressFactors.push('Heat stress');
-                                healthChange -= 2;
-                            } else {
-                                healthChange += 0.5; // Optimal temperature
-                            }
-                            
-                            // Humidity stress
-                            if (this.humidity < speciesData.optimalHumidity.min) {
-                                plant.stressFactors.push('Low humidity');
-                                healthChange -= 1.5;
-                            } else if (this.humidity > speciesData.optimalHumidity.max) {
-                                plant.stressFactors.push('High humidity');
-                                healthChange -= 1;
-                            } else {
-                                healthChange += 0.3;
-                            }
-                            
-                            // Light stress
-                            const lightDifference = Math.abs(this.lightIntensity - speciesData.lightRequirement);
-                            if (lightDifference > 20) {
-                                plant.stressFactors.push(this.lightIntensity < speciesData.lightRequirement ? 'Insufficient light' : 'Too bright');
-                                healthChange -= 1;
-                            } else {
-                                healthChange += 0.2;
-                            }
-                            
-                            // Feeding requirements
-                            const daysSinceFeeding = this.currentDay - plant.lastFed;
-                            if (daysSinceFeeding > speciesData.feedingInterval) {
-                                plant.needsFeeding = true;
-                                plant.stressFactors.push('Hungry');
-                                healthChange -= 3;
-                            }
-                            
-                            // Seasonal dormancy check
-                            if (speciesData.dormancyRequired && this.checkDormancyTrigger(speciesData)) {
-                                if (!plant.isInDormancy) {
-                                    plant.isInDormancy = true;
-                                    console.log(`${speciesData.name} entering dormancy`);
-                                }
-                            } else if (plant.isInDormancy) {
-                                plant.isInDormancy = false;
-                                console.log(`${speciesData.name} exiting dormancy`);
-                            }
-                            
-                            // Apply health changes
-                            plant.health = Math.max(0, Math.min(100, plant.health + healthChange));
-                            
-                            // Update visual appearance based on health
-                            this.updatePlantVisuals(plant);
-                        });
-                    }
-                    
-                    checkDormancyTrigger(speciesData) {
-                        return (this.temperature <= speciesData.dormancyTrigger.temp || 
-                                this.dayLength <= speciesData.dormancyTrigger.lightHours ||
-                                this.season === 'winter');
-                    }
-                    
-                    updatePlantVisuals(plant) {
-                        if (!plant.mesh) return;
-                        
-                        // Update plant color based on health
-                        plant.mesh.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                const healthRatio = plant.health / 100;
-                                
-                                if (plant.isInDormancy) {
-                                    // Dormant plants are brownish
-                                    child.material.color.setHex(0x8B4513);
-                                } else if (healthRatio > 0.8) {
-                                    // Healthy - vibrant green
-                                    child.material.color.setHex(0x32CD32);
-                                } else if (healthRatio > 0.6) {
-                                    // Good - normal green
-                                    child.material.color.setHex(0x228B22);
-                                } else if (healthRatio > 0.4) {
-                                    // Poor - yellowish
-                                    child.material.color.setHex(0xDAA520);
-                                } else if (healthRatio > 0.2) {
-                                    // Bad - orange
-                                    child.material.color.setHex(0xFF8C00);
-                                } else {
-                                    // Critical - red/brown
-                                    child.material.color.setHex(0x8B0000);
-                                }
-                            }
-                        });
-                    }
-                    
-                    feedPlant(plantId) {
-                        const plant = this.plants.get(plantId);
-                        if (!plant) return false;
-                        
-                        plant.lastFed = this.currentDay;
-                        plant.needsFeeding = false;
-                        plant.health = Math.min(100, plant.health + 10);
-                        
-                        console.log(`🪲 Fed ${this.plantSpeciesData[plant.species].name}`);
-                        this.updatePlantVisuals(plant);
-                        
-                        // Show feeding effect
-                        this.showFeedingEffect(plant.position);
-                        return true;
-                    }
-                    
-                    showFeedingEffect(position) {
-                        // Create feeding particle effect
-                        const feedEffect = new THREE.Mesh(
-                            new THREE.SphereGeometry(0.1),
-                            new THREE.MeshBasicMaterial({ 
-                                color: 0x00FF00,
-                                transparent: true,
-                                opacity: 0.8
-                            })
-                        );
-                        feedEffect.position.copy(position);
-                        feedEffect.position.y += 0.5;
-                        scene.add(feedEffect);
-                        
-                        // Animate feeding effect
-                        let scale = 0.1;
-                        const feedAnimation = setInterval(() => {
-                            scale += 0.1;
-                            feedEffect.scale.setScalar(scale);
-                            feedEffect.material.opacity -= 0.1;
-                            feedEffect.position.y += 0.05;
-                            
-                            if (feedEffect.material.opacity <= 0) {
-                                scene.remove(feedEffect);
-                                clearInterval(feedAnimation);
-                            }
-                        }, 50);
-                    }
-                    
-                    updateSceneLighting() {
-                        // Update scene lighting based on light intensity
-                        if (window.game && window.game.scene) {
-                            const lights = window.game.scene.children.filter(child => 
-                                child.type === 'DirectionalLight' || child.type === 'PointLight'
-                            );
-                            
-                            lights.forEach(light => {
-                                light.intensity = (this.lightIntensity / 100) * 1.0;
-                            });
-                        }
-                    }
-                    
-                    applySeasonalEffects() {
-                        const seasonalSettings = {
-                            spring: { tempMod: 0, humidityMod: 5, lightMod: 0 },
-                            summer: { tempMod: 8, humidityMod: -10, lightMod: 10 },
-                            autumn: { tempMod: -5, humidityMod: 10, lightMod: -5 },
-                            winter: { tempMod: -15, humidityMod: 0, lightMod: -20 }
-                        };
-                        
-                        const effects = seasonalSettings[this.season];
-                        if (effects) {
-                            // Apply seasonal modifiers but don't override manual controls
-                            console.log(`🍂 Applied ${this.season} seasonal effects`);
-                        }
-                    }
-                    
-                    update(deltaTime) {
-                        this.gameTime += deltaTime;
-                        
-                        // Update game time (accelerated)
-                        if (this.gameTime >= this.dayDuration) {
-                            this.gameTime = 0;
-                            this.currentDay++;
-                            
-                            // Update all plants' age
-                            this.plants.forEach(plant => {
-                                plant.age++;
-                                this.checkGrowthStage(plant);
-                            });
-                            
-                            console.log(`📅 Day ${this.currentDay} - ${this.plants.size} plants aging`);
-                        }
-                        
-                        // Update current hour
-                        this.currentHour = Math.floor((this.gameTime / this.dayDuration) * 24);
-                        
-                        // Update UI
-                        this.updateUI();
-                        
-                        // Update plant health periodically
-                        if (Math.random() < 0.01) { // 1% chance per frame
-                            this.updatePlantHealth();
-                        }
-                    }
-                    
-                    checkGrowthStage(plant) {
-                        const speciesData = this.plantSpeciesData[plant.species];
-                        if (!speciesData) return;
-                        
-                        const ageRatio = plant.age / speciesData.maxAge;
-                        const newStage = Math.min(
-                            speciesData.growthStages.length - 1,
-                            Math.floor(ageRatio * speciesData.growthStages.length)
-                        );
-                        
-                        if (newStage !== plant.stage) {
-                            plant.stage = newStage;
-                            const stageName = speciesData.growthStages[newStage];
-                            console.log(`🌱 ${speciesData.name} grew to ${stageName} stage`);
-                            
-                            // Update plant visual size based on growth stage
-                            if (plant.mesh) {
-                                const scaleMultiplier = 0.3 + (newStage / speciesData.growthStages.length) * 0.7;
-                                plant.mesh.scale.setScalar(scaleMultiplier);
-                            }
-                        }
-                    }
-                    
-                    updateUI() {
-                        // Update time display
-                        const timeElement = document.getElementById('game-time');
-                        if (timeElement) {
-                            timeElement.textContent = `Day ${this.currentDay}, ${this.currentHour.toString().padStart(2, '0')}:00`;
-                        }
-                        
-                        // Update weather status
-                        const statusElement = document.getElementById('weather-status');
-                        if (statusElement) {
-                            const tempOk = this.temperature >= 15 && this.temperature <= 30;
-                            const humidityOk = this.humidity >= 50 && this.humidity <= 85;
-                            const lightOk = this.lightIntensity >= 40 && this.lightIntensity <= 80;
-                            
-                            if (tempOk && humidityOk && lightOk) {
-                                statusElement.textContent = 'Optimal';
-                                statusElement.style.color = '#4CAF50';
-                            } else if ((tempOk ? 1 : 0) + (humidityOk ? 1 : 0) + (lightOk ? 1 : 0) >= 2) {
-                                statusElement.textContent = 'Good';
-                                statusElement.style.color = '#FFA500';
-                            } else {
-                                statusElement.textContent = 'Poor';
-                                statusElement.style.color = '#FF4444';
-                            }
-                        }
-                    }
-                    
-                    inspectPlant(plantId) {
-                        const plant = this.plants.get(plantId);
-                        if (!plant) return;
-                        
-                        const speciesData = this.plantSpeciesData[plant.species];
-                        const carePanel = document.getElementById('plant-list-care');
-                        
-                        const stageText = speciesData.growthStages[plant.stage] || 'Unknown';
-                        const healthColor = plant.health > 80 ? '#4CAF50' : plant.health > 60 ? '#FFA500' : '#FF4444';
-                        
-                        carePanel.innerHTML = `
-                            <h4 style="color: #FF6B35; margin: 0 0 10px 0;">${speciesData.name}</h4>
-                            <div style="margin-bottom: 8px;">
-                                <strong>Health:</strong> <span style="color: ${healthColor}">${plant.health.toFixed(1)}%</span>
-                            </div>
-                            <div style="margin-bottom: 8px;">
-                                <strong>Age:</strong> ${plant.age} days (${stageText})
-                            </div>
-                            <div style="margin-bottom: 8px;">
-                                <strong>Last Fed:</strong> ${this.currentDay - plant.lastFed} days ago
-                            </div>
-                            <div style="margin-bottom: 8px;">
-                                <strong>Status:</strong> ${plant.isInDormancy ? '💤 Dormant' : '🌱 Active'}
-                            </div>
-                            ${plant.needsFeeding ? '<div style="color: #FF4444; margin-bottom: 8px;">🪲 Needs Feeding!</div>' : ''}
-                            ${plant.stressFactors.length > 0 ? 
-                                `<div style="margin-bottom: 8px;">
-                                    <strong>Stress Factors:</strong><br>
-                                    ${plant.stressFactors.map(factor => `⚠️ ${factor}`).join('<br>')}
-                                </div>` : ''
-                            }
-                            <button onclick="plantCareSystem.feedPlant('${plantId}')" 
-                                    style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
-                                🪲 Feed Plant
-                            </button>
-                            <div style="margin-top: 10px; font-size: 10px; color: #AAA;">
-                                <strong>Optimal Conditions:</strong><br>
-                                🌡️ ${speciesData.optimalTemp.min}-${speciesData.optimalTemp.max}°C<br>
-                                💧 ${speciesData.optimalHumidity.min}-${speciesData.optimalHumidity.max}% humidity<br>
-                                💡 ${speciesData.lightRequirement}% light intensity<br>
-                                🪲 Feed every ${speciesData.feedingInterval} days
-                            </div>
-                        `;
-                    }
-                }
-                
-                // Initialize plant care system
-                const plantCareSystem = new PlantCareSystem();
-                window.plantCareSystem = plantCareSystem;
-                
-                // PLANT STORE INVENTORY WITH PRICING
-                const storeInventory = {
-                    "Plant Paradise": [
-                        { name: "Simple Nepenthes Alata", price: 24.99, species: "nepenthes" },
-                        { name: "Venus Flytrap Starter", price: 19.99, species: "dionaea" },
-                        { name: "Baby Sundew", price: 12.99, species: "drosera" }
-                    ],
-                    "Exotic Plants Co": [
-                        { name: "Premium Nepenthes Miranda", price: 89.99, species: "nepenthes" },
-                        { name: "Rare Sarracenia Purpurea", price: 45.99, species: "sarracenia" },
-                        { name: "Giant Venus Flytrap", price: 67.99, species: "dionaea" }
-                    ],
-                    "Garden Supply": [
-                        { name: "Carnivore Soil Mix", price: 15.99, species: "supply" },
-                        { name: "Distilled Water (5L)", price: 8.99, species: "supply" },
-                        { name: "Plant Fertilizer", price: 22.99, species: "supply" }
-                    ],
-                    "Rare Species Store": [
-                        { name: "Ultra Rare Cephalotus", price: 199.99, species: "cephalotus" },
-                        { name: "Darlingtonia Californica", price: 156.99, species: "darlingtonia" },
-                        { name: "Rainbow Sundew", price: 134.99, species: "drosera" }
-                    ],
-                    "Plant Hospital": [
-                        { name: "Plant Health Check", price: 25.00, species: "service" },
-                        { name: "Disease Treatment", price: 40.00, species: "service" },
-                        { name: "Repotting Service", price: 30.00, species: "service" }
-                    ]
-                };
-                
                 // INTERACTIVE FEATURES
                 // Water features
                 const waterGeometry = new THREE.CylinderGeometry(8, 8, 0.5, 16);
@@ -2487,7 +695,6 @@
                         0.3,
                         Math.sin(angle) * 9
                     );
-                    rock.userData = { type: 'decorative_rock', grabbable: true };
                     scene.add(rock);
                 }
                 
@@ -2496,14 +703,6 @@
                 let isLocked = false;
                 let isCrouching = false, isSprinting = false, isJumping = false;
                 let playerVelocity = { x: 0, y: 0, z: 0 };
-                let groundLevel = 2; // Player height when standing
-                
-                // CAMERA ZOOM SYSTEM
-                let cameraDistance = 0; // 0 = first person, positive = third person
-                let isThirdPerson = false;
-                let cameraAngleX = 0; // Vertical rotation around player
-                let cameraAngleY = 0; // Horizontal rotation around player
-                let cameraTarget = new THREE.Vector3(); // What camera looks at
                 
                 // Mouse lock controls
                 const controls = new THREE.PointerLockControls(camera, document.body);
@@ -2527,780 +726,18 @@
                     controls.lock();
                 });
                 
-                // TRACKPAD/MOUSE CONTROLS FOR CAMERA
-                let isRightMouseDown = false;
-                let lastMouseX = 0;
-                let lastMouseY = 0;
-                
-                // Right mouse button for camera rotation
-                canvas.addEventListener('mousedown', (event) => {
-                    if (event.button === 2) { // Right mouse button
-                        isRightMouseDown = true;
-                        lastMouseX = event.clientX;
-                        lastMouseY = event.clientY;
-                        event.preventDefault();
-                    }
-                });
-                
-                canvas.addEventListener('mouseup', (event) => {
-                    if (event.button === 2) {
-                        isRightMouseDown = false;
-                    }
-                });
-                
-                canvas.addEventListener('mousemove', (event) => {
-                    if (isRightMouseDown && isThirdPerson) {
-                        const deltaX = event.clientX - lastMouseX;
-                        const deltaY = event.clientY - lastMouseY;
-                        
-                        // Rotate camera around player
-                        cameraAngleY -= deltaX * 0.01; // Horizontal rotation
-                        cameraAngleX -= deltaY * 0.01; // Vertical rotation
-                        
-                        // Clamp vertical rotation (prevent camera from going below ground or too high)
-                        cameraAngleX = Math.max(-Math.PI/3, Math.min(Math.PI/3, cameraAngleX));
-                        
-                        lastMouseX = event.clientX;
-                        lastMouseY = event.clientY;
-                    }
-                });
-                
-                // Disable context menu on right click
-                canvas.addEventListener('contextmenu', (event) => {
-                    event.preventDefault();
-                });
-                
-                // SCROLL WHEEL ZOOM CONTROLS
-                canvas.addEventListener('wheel', (event) => {
-                    event.preventDefault();
-                    
-                    // Two-finger scroll for zoom
-                    const zoomSpeed = 0.5;
-                    cameraDistance += event.deltaY * 0.01 * zoomSpeed;
-                    
-                    // Clamp camera distance (0 = first person, max = 20 units back)
-                    cameraDistance = Math.max(0, Math.min(20, cameraDistance));
-                    
-                    // Toggle between first and third person
-                    if (cameraDistance > 1) {
-                        if (!isThirdPerson) {
-                            console.log('👁️ Switched to third person view');
-                            isThirdPerson = true;
-                            playerCharacter.visible = true;
-                            // Disable pointer lock controls in third person
-                            if (isLocked) {
-                                controls.unlock();
-                            }
-                        }
-                    } else {
-                        if (isThirdPerson) {
-                            console.log('👁️ Switched to first person view');
-                            isThirdPerson = false;
-                            playerCharacter.visible = false;
-                            // Reset camera angles
-                            cameraAngleX = 0;
-                            cameraAngleY = 0;
-                        }
-                    }
-                    
-                    console.log('🔍 Camera distance:', cameraDistance.toFixed(1));
-                });
-                
-                // FLOATING MESSAGE SYSTEM
-                function showFloatingMessage(text, position, color = 0xFFFFFF) {
-                    // Create 3D text effect
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.width = 256;
-                    canvas.height = 64;
-                    
-                    context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
-                    context.font = 'bold 32px Arial';
-                    context.textAlign = 'center';
-                    context.fillText(text, 128, 40);
-                    
-                    const texture = new THREE.CanvasTexture(canvas);
-                    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-                    const sprite = new THREE.Sprite(spriteMaterial);
-                    sprite.position.copy(position);
-                    sprite.position.y += 1;
-                    sprite.scale.set(2, 0.5, 1);
-                    
-                    scene.add(sprite);
-                    
-                    // Animate floating text
-                    let opacity = 1;
-                    const floatAnimation = setInterval(() => {
-                        sprite.position.y += 0.05;
-                        opacity -= 0.02;
-                        spriteMaterial.opacity = opacity;
-                        
-                        if (opacity <= 0) {
-                            scene.remove(sprite);
-                            clearInterval(floatAnimation);
-                        }
-                    }, 50);
-                }
-                
-                // SHOPPING CART SYSTEM
-                let shoppingCart = [];
-                let totalCartValue = 0;
-                let currentStore = null;
-                
-                // INVENTORY AND HOLDING SYSTEM
-                let heldItem = null; // Currently held item (visible in corner)
-                let inventory = new Array(10).fill(null); // Slots 0-9
-                let heldItemDisplay = null; // 3D display in corner
-                let inventoryUI = null; // UI container
-                
-                // DAY/NIGHT CYCLE SYSTEM
-                let gameTime = 12; // Start at noon (0-24 hours)
-                let timeSpeed = 0.02; // How fast time passes
-                let isNightTime = false;
-                let hasFlashlight = false;
-                let flashlightOn = false;
-                let flashlightLight = null;
-                
-                // BUG SYSTEM
-                let bugs = [];
-                let bugZappers = [];
-                
-                // STORE PLACEMENT SYSTEM
-                let customStores = [];
-                let storePlacementMode = false;
-                let storeExpansionMode = false;
-                
-                // Create inventory UI
-                function createInventoryUI() {
-                    // Create inventory container at bottom of screen
-                    inventoryUI = document.createElement('div');
-                    inventoryUI.id = 'inventory-ui';
-                    inventoryUI.style.cssText = `
-                        position: fixed;
-                        bottom: 20px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        display: flex;
-                        gap: 5px;
-                        z-index: 1000;
-                        pointer-events: none;
-                    `;
-                    
-                    // Create 10 inventory slots (0-9)
-                    for (let i = 0; i < 10; i++) {
-                        const slot = document.createElement('div');
-                        slot.id = `inventory-slot-${i}`;
-                        slot.style.cssText = `
-                            width: 60px;
-                            height: 60px;
-                            background: rgba(0, 0, 0, 0.7);
-                            border: 2px solid #444;
-                            border-radius: 8px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: white;
-                            font-family: Arial, sans-serif;
-                            font-size: 12px;
-                            position: relative;
-                        `;
-                        
-                        // Add slot number
-                        const number = document.createElement('span');
-                        number.textContent = i;
-                        number.style.cssText = `
-                            position: absolute;
-                            top: 2px;
-                            left: 4px;
-                            font-size: 10px;
-                            color: #ccc;
-                        `;
-                        slot.appendChild(number);
-                        
-                        // Add item preview container
-                        const preview = document.createElement('div');
-                        preview.id = `slot-preview-${i}`;
-                        preview.style.cssText = `
-                            width: 50px;
-                            height: 50px;
-                            margin-top: 8px;
-                        `;
-                        slot.appendChild(preview);
-                        
-                        inventoryUI.appendChild(slot);
-                    }
-                    
-                    document.body.appendChild(inventoryUI);
-                }
-                
-                // Create held item display in corner
-                function createHeldItemDisplay() {
-                    const heldContainer = document.createElement('div');
-                    heldContainer.id = 'held-item-display';
-                    heldContainer.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        width: 150px;
-                        height: 150px;
-                        background: rgba(0, 0, 0, 0.7);
-                        border: 2px solid #666;
-                        border-radius: 10px;
-                        z-index: 1000;
-                        pointer-events: none;
-                        display: none;
-                    `;
-                    
-                    // Add "HOLDING" label
-                    const label = document.createElement('div');
-                    label.textContent = 'HOLDING';
-                    label.style.cssText = `
-                        color: white;
-                        font-family: Arial, sans-serif;
-                        font-size: 12px;
-                        text-align: center;
-                        padding: 5px;
-                        border-bottom: 1px solid #666;
-                    `;
-                    heldContainer.appendChild(label);
-                    
-                    // Add 3D preview container
-                    const preview3D = document.createElement('div');
-                    preview3D.id = 'held-3d-preview';
-                    preview3D.style.cssText = `
-                        width: 100%;
-                        height: 120px;
-                    `;
-                    heldContainer.appendChild(preview3D);
-                    
-                    document.body.appendChild(heldContainer);
-                    return heldContainer;
-                }
-                
-                // Create a 3D preview of an item
-                function createItemPreview(originalObject, containerElement, scale = 0.3) {
-                    try {
-                        // Create mini scene for the preview
-                        const previewScene = new THREE.Scene();
-                        const previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-                        const previewRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-                        
-                        const width = containerElement.clientWidth || 50;
-                        const height = containerElement.clientHeight || 50;
-                        
-                        previewRenderer.setSize(width, height);
-                        previewRenderer.setClearColor(0x000000, 0);
-                        containerElement.appendChild(previewRenderer.domElement);
-                        
-                        // Clone the original object for preview
-                        let previewObject;
-                        try {
-                            previewObject = originalObject.clone();
-                        } catch (cloneError) {
-                            // Fallback: create simple box if cloning fails
-                            console.warn('Object cloning failed, using simple box:', cloneError);
-                            previewObject = new THREE.Mesh(
-                                new THREE.BoxGeometry(1, 1, 1),
-                                new THREE.MeshLambertMaterial({ color: originalObject.material?.color || 0x888888 })
-                            );
-                        }
-                        
-                        previewObject.scale.setScalar(scale);
-                        previewObject.position.set(0, 0, 0);
-                        previewScene.add(previewObject);
-                        
-                        // Add lighting
-                        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                        previewScene.add(ambientLight);
-                        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                        directionalLight.position.set(1, 1, 1);
-                        previewScene.add(directionalLight);
-                        
-                        // Position camera
-                        previewCamera.position.set(1, 1, 1);
-                        previewCamera.lookAt(0, 0, 0);
-                        
-                        // Animate rotation
-                        let animationRunning = true;
-                        function animatePreview() {
-                            if (!animationRunning) return;
-                            
-                            try {
-                                previewObject.rotation.y += 0.02;
-                                previewRenderer.render(previewScene, previewCamera);
-                                requestAnimationFrame(animatePreview);
-                            } catch (animError) {
-                                console.warn('Preview animation error:', animError);
-                                animationRunning = false;
-                            }
-                        }
-                        animatePreview();
-                        
-                        return { scene: previewScene, renderer: previewRenderer, object: previewObject };
-                    } catch (error) {
-                        console.error('Failed to create 3D preview:', error);
-                        // Fallback to text display
-                        containerElement.innerHTML = `<div style="color: white; text-align: center; font-size: 10px; padding-top: 20px;">${originalObject.userData?.type || 'Item'}</div>`;
-                        return null;
-                    }
-                }
-                
-                // Hold an item (display in corner)
-                function holdItem(object) {
-                    try {
-                        // If already holding something, move it to inventory
-                        if (heldItem) {
-                            addToInventory(heldItem);
-                        }
-                        
-                        heldItem = object;
-                        
-                        // Remove from scene
-                        scene.remove(object);
-                        
-                        // Show held item display
-                        const heldDisplay = document.getElementById('held-item-display');
-                        if (heldDisplay) {
-                            heldDisplay.style.display = 'block';
-                            
-                            // Clear previous preview
-                            const previewContainer = document.getElementById('held-3d-preview');
-                            if (previewContainer) {
-                                previewContainer.innerHTML = '';
-                                
-                                // Create simplified preview to avoid issues
-                                try {
-                                    createItemPreview(object, previewContainer, 0.5);
-                                } catch (previewError) {
-                                    console.warn('Preview creation failed, using text fallback:', previewError);
-                                    previewContainer.innerHTML = `<div style="color: white; text-align: center; padding-top: 50px;">${object.userData?.type || 'Object'}</div>`;
-                                }
-                            }
-                        }
-                        
-                        console.log('🤲 Now holding:', object.userData?.type || 'object');
-                    } catch (error) {
-                        console.error('Error in holdItem:', error);
-                        // Fallback - just remove from scene and set as held
-                        scene.remove(object);
-                        heldItem = object;
-                        console.log('🤲 Holding (fallback):', object.userData?.type || 'object');
-                    }
-                }
-                
-                // Add item to first available inventory slot
-                function addToInventory(object) {
-                    try {
-                        for (let i = 0; i < inventory.length; i++) {
-                            if (inventory[i] === null) {
-                                inventory[i] = object;
-                                updateInventorySlot(i);
-                                console.log(`📦 Added ${object.userData?.type || 'object'} to slot ${i}`);
-                                return true;
-                            }
-                        }
-                        
-                        // Inventory full - automatically place the last item (slot 9)
-                        console.log('📦 Inventory full! Auto-placing last item...');
-                        const lastItem = inventory[9];
-                        
-                        if (lastItem) {
-                            // Place the last item upright at player's position
-                            const placePosition = camera.position.clone();
-                            placePosition.y = groundLevel + (lastItem.geometry?.boundingBox?.max.y || 0.5);
-                            
-                            lastItem.position.copy(placePosition);
-                            lastItem.rotation.set(0, 0, 0); // Reset rotation to upright
-                            scene.add(lastItem);
-                            
-                            console.log('📍 Auto-placed:', lastItem.userData?.type || 'object');
-                        }
-                        
-                        // Clear slot 9 and add new item there
-                        inventory[9] = object;
-                        updateInventorySlot(9);
-                        
-                        console.log(`📦 Added ${object.userData?.type || 'object'} to slot 9 (replaced auto-placed item)`);
-                        return true;
-                    } catch (error) {
-                        console.error('Error in addToInventory:', error);
-                        return false;
-                    }
-                }
-                
-                // Update visual display of inventory slot
-                function updateInventorySlot(slotIndex) {
-                    try {
-                        const slotPreview = document.getElementById(`slot-preview-${slotIndex}`);
-                        const slot = document.getElementById(`inventory-slot-${slotIndex}`);
-                        
-                        if (!slotPreview || !slot) {
-                            console.warn(`Slot elements not found for index ${slotIndex}`);
-                            return;
-                        }
-                        
-                        if (inventory[slotIndex]) {
-                            // Clear previous content
-                            slotPreview.innerHTML = '';
-                            
-                            // Create 3D preview or fallback
-                            try {
-                                createItemPreview(inventory[slotIndex], slotPreview, 0.3);
-                            } catch (previewError) {
-                                console.warn('Inventory preview failed, using text:', previewError);
-                                slotPreview.innerHTML = `<div style="color: white; font-size: 8px; text-align: center;">${inventory[slotIndex].userData?.type || 'Item'}</div>`;
-                            }
-                            
-                            // Highlight slot border
-                            slot.style.borderColor = '#4CAF50';
-                        } else {
-                            slotPreview.innerHTML = '';
-                            slot.style.borderColor = '#444';
-                        }
-                    } catch (error) {
-                        console.error('Error updating inventory slot:', error);
-                    }
-                }
-                
-                // Select item from inventory slot
-                function selectFromInventory(slotIndex) {
-                    if (inventory[slotIndex]) {
-                        // If holding something, swap with inventory
-                        if (heldItem) {
-                            const temp = heldItem;
-                            heldItem = inventory[slotIndex];
-                            inventory[slotIndex] = temp;
-                            
-                            // Update displays
-                            holdItem(heldItem);
-                            updateInventorySlot(slotIndex);
-                        } else {
-                            // Just take from inventory
-                            heldItem = inventory[slotIndex];
-                            inventory[slotIndex] = null;
-                            
-                            holdItem(heldItem);
-                            updateInventorySlot(slotIndex);
-                        }
-                        
-                        console.log(`🔄 Selected item from slot ${slotIndex}`);
-                    }
-                }
-                
-                // Drop held item safely
-                function dropHeldItem() {
-                    if (!heldItem) return;
-                    
-                    if (!isCrouching) {
-                        showDialogue("Drop", "You must crouch (C) before dropping to avoid knocking over items!");
-                        return;
-                    }
-                    
-                    // Calculate drop position (in front of player, at ground level)
-                    const dropPosition = camera.position.clone();
-                    const forward = new THREE.Vector3(0, 0, -1);
-                    forward.applyQuaternion(camera.quaternion);
-                    forward.multiplyScalar(2); // Drop 2 units in front
-                    dropPosition.add(forward);
-                    dropPosition.y = groundLevel + (heldItem.geometry?.boundingBox?.max.y || 0.5);
-                    
-                    // Place item in world
-                    heldItem.position.copy(dropPosition);
-                    scene.add(heldItem);
-                    
-                    console.log('📍 Safely dropped:', heldItem.userData?.type || 'object');
-                    
-                    // Clear held item
-                    heldItem = null;
-                    
-                    // Hide held item display
-                    const heldDisplay = document.getElementById('held-item-display');
-                    if (heldDisplay) {
-                        heldDisplay.style.display = 'none';
-                    }
-                }
-                
-                // DAY/NIGHT CYCLE FUNCTIONS
-                function updateDayNightCycle() {
-                    // Update game time
-                    gameTime += timeSpeed / 60; // Assuming 60 FPS
-                    if (gameTime >= 24) gameTime = 0;
-                    
-                    // Determine if it's night time (6 PM to 6 AM)
-                    isNightTime = gameTime < 6 || gameTime >= 18;
-                    
-                    // Update lighting based on time
-                    const sun = scene.children.find(light => light.type === 'DirectionalLight');
-                    const ambient = scene.children.find(light => light.type === 'AmbientLight');
-                    
-                    if (sun && ambient) {
-                        if (isNightTime) {
-                            // Night time - very dim lighting
-                            sun.intensity = 0.1;
-                            ambient.intensity = 0.1;
-                            sun.color.setHex(0x202040); // Dark blue
-                            scene.background = new THREE.Color(0x000020); // Dark night sky
-                            scene.fog.color.setHex(0x000020);
-                        } else {
-                            // Day time - bright lighting
-                            const dayProgress = Math.sin((gameTime - 6) * Math.PI / 12);
-                            sun.intensity = Math.max(0.3, dayProgress * 0.8);
-                            ambient.intensity = Math.max(0.2, dayProgress * 0.6);
-                            
-                            if (gameTime < 8 || gameTime > 16) {
-                                // Dawn/Dusk
-                                sun.color.setHex(0xFF8844);
-                                scene.background = new THREE.Color(0xFF6644);
-                            } else {
-                                // Midday
-                                sun.color.setHex(0xFFFFFF);
-                                scene.background = new THREE.Color(0x87CEEB);
-                            }
-                            scene.fog.color = scene.background;
-                        }
-                    }
-                    
-                    // Update time display
-                    updateTimeDisplay();
-                }
-                
-                function updateTimeDisplay() {
-                    let timeDisplay = document.getElementById('time-display');
-                    if (!timeDisplay) {
-                        timeDisplay = document.createElement('div');
-                        timeDisplay.id = 'time-display';
-                        timeDisplay.style.cssText = `
-                            position: fixed;
-                            top: 20px;
-                            left: 20px;
-                            background: rgba(0, 0, 0, 0.8);
-                            color: white;
-                            padding: 10px 15px;
-                            border-radius: 8px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            z-index: 1000;
-                        `;
-                        document.body.appendChild(timeDisplay);
-                    }
-                    
-                    const hours = Math.floor(gameTime);
-                    const minutes = Math.floor((gameTime % 1) * 60);
-                    const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-                    const period = isNightTime ? '🌙' : '☀️';
-                    
-                    timeDisplay.innerHTML = `${period} ${timeString}`;
-                }
-                
-                function createFlashlight() {
-                    // Create flashlight item
-                    const flashlightGroup = new THREE.Group();
-                    
-                    // Handle
-                    const handle = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.03, 0.03, 0.15, 8),
-                        new THREE.MeshLambertMaterial({ color: 0x333333 })
-                    );
-                    flashlightGroup.add(handle);
-                    
-                    // Head
-                    const head = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.05, 0.03, 0.08, 8),
-                        new THREE.MeshLambertMaterial({ color: 0x666666 })
-                    );
-                    head.position.y = 0.11;
-                    flashlightGroup.add(head);
-                    
-                    // Lens
-                    const lens = new THREE.Mesh(
-                        new THREE.CircleGeometry(0.04, 8),
-                        new THREE.MeshBasicMaterial({ color: 0xFFFFAA })
-                    );
-                    lens.position.y = 0.15;
-                    lens.rotation.x = -Math.PI / 2;
-                    flashlightGroup.add(lens);
-                    
-                    flashlightGroup.userData = {
-                        type: 'flashlight',
-                        name: 'LED Flashlight',
-                        price: 15.99
-                    };
-                    
-                    return flashlightGroup;
-                }
-                
-                function toggleFlashlight() {
-                    if (!hasFlashlight) {
-                        showDialogue("Flashlight", "You need to buy a flashlight from the Department Store first!");
-                        return;
-                    }
-                    
-                    flashlightOn = !flashlightOn;
-                    
-                    if (flashlightOn) {
-                        // Create flashlight beam
-                        if (!flashlightLight) {
-                            flashlightLight = new THREE.SpotLight(0xFFFFAA, 2, 10, Math.PI / 6, 0.3);
-                            flashlightLight.position.copy(camera.position);
-                            flashlightLight.target.position.copy(camera.position);
-                            scene.add(flashlightLight);
-                            scene.add(flashlightLight.target);
-                        }
-                        console.log('🔦 Flashlight ON');
-                    } else {
-                        // Turn off flashlight
-                        if (flashlightLight) {
-                            scene.remove(flashlightLight);
-                            scene.remove(flashlightLight.target);
-                            flashlightLight = null;
-                        }
-                        console.log('🔦 Flashlight OFF');
-                    }
-                }
-                
-                // BUG SYSTEM
-                function createBugZapper() {
-                    const zapperGroup = new THREE.Group();
-                    
-                    // Base
-                    const base = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.08, 0.08, 0.1, 8),
-                        new THREE.MeshLambertMaterial({ color: 0x333333 })
-                    );
-                    zapperGroup.add(base);
-                    
-                    // Pole
-                    const pole = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.02, 0.02, 0.6, 6),
-                        new THREE.MeshLambertMaterial({ color: 0x666666 })
-                    );
-                    pole.position.y = 0.35;
-                    zapperGroup.add(pole);
-                    
-                    // Zapper head
-                    const head = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.1, 8, 6),
-                        new THREE.MeshBasicMaterial({ color: 0x4444FF })
-                    );
-                    head.position.y = 0.7;
-                    zapperGroup.add(head);
-                    
-                    // Electric glow
-                    const glow = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.15, 8, 6),
-                        new THREE.MeshBasicMaterial({ 
-                            color: 0x88AAFF,
-                            transparent: true,
-                            opacity: 0.3
-                        })
-                    );
-                    glow.position.y = 0.7;
-                    zapperGroup.add(glow);
-                    
-                    zapperGroup.userData = {
-                        type: 'bug_zapper',
-                        name: 'Electric Bug Zapper',
-                        price: 45.99,
-                        range: 5,
-                        active: false
-                    };
-                    
-                    return zapperGroup;
-                }
-                
-                function spawnBug(x, z) {
-                    const bug = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.02, 4, 3),
-                        new THREE.MeshBasicMaterial({ color: 0x654321 })
-                    );
-                    
-                    bug.position.set(x, 1 + Math.random() * 2, z);
-                    bug.userData = {
-                        type: 'bug',
-                        speed: 0.02 + Math.random() * 0.03,
-                        direction: Math.random() * Math.PI * 2
-                    };
-                    
-                    scene.add(bug);
-                    bugs.push(bug);
-                    
-                    return bug;
-                }
-                
-                function updateBugs() {
-                    bugs.forEach((bug, index) => {
-                        if (!bug.parent) {
-                            bugs.splice(index, 1);
-                            return;
-                        }
-                        
-                        // Move bug
-                        const userData = bug.userData;
-                        bug.position.x += Math.cos(userData.direction) * userData.speed;
-                        bug.position.z += Math.sin(userData.direction) * userData.speed;
-                        bug.position.y += (Math.random() - 0.5) * 0.01;
-                        
-                        // Random direction changes
-                        if (Math.random() < 0.02) {
-                            userData.direction += (Math.random() - 0.5) * 0.5;
-                        }
-                        
-                        // Check for bug zappers
-                        bugZappers.forEach(zapper => {
-                            if (zapper.userData.active) {
-                                const distance = bug.position.distanceTo(zapper.position);
-                                if (distance < zapper.userData.range) {
-                                    // ZAP!
-                                    scene.remove(bug);
-                                    bugs.splice(index, 1);
-                                    
-                                    // Zap effect
-                                    const zapEffect = new THREE.Mesh(
-                                        new THREE.SphereGeometry(0.1),
-                                        new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
-                                    );
-                                    zapEffect.position.copy(bug.position);
-                                    scene.add(zapEffect);
-                                    
-                                    setTimeout(() => scene.remove(zapEffect), 100);
-                                    console.log('⚡ Bug zapped!');
-                                }
-                            }
-                        });
-                    });
-                    
-                    // Spawn new bugs occasionally
-                    if (bugs.length < 20 && Math.random() < 0.002) {
-                        const x = (Math.random() - 0.5) * 100;
-                        const z = (Math.random() - 0.5) * 100;
-                        spawnBug(x, z);
-                    }
-                }
-                
-                // Enhanced grab system - can grab ANY solid object except water
-                function findNearestGrabbableObject(playerPos, scene) {
+                // Enhanced object interaction with debugging
+                function findNearestObject(playerPos, scene) {
                     let nearest = null;
-                    let minDistance = 6; // Large grab range
+                    let minDistance = 5; // Increased grab range
                     
-                    console.log('🔍 Looking for grabbable objects near position:', 
+                    console.log('🔍 Looking for objects near position:', 
                         playerPos.x.toFixed(1), playerPos.y.toFixed(1), playerPos.z.toFixed(1));
                     
                     scene.children.forEach(child => {
-                        // Skip water, lights, and other non-grabbable objects
-                        if (child.type === 'AmbientLight' || 
-                            child.type === 'DirectionalLight' || 
-                            child.type === 'PointLight' ||
-                            child.material?.color?.getHex() === 0x4488ff || // Water color
-                            child.geometry?.type === 'PlaneGeometry') { // Skip floors/walls
-                            return;
-                        }
-                        
-                        // Can grab any solid mesh object
-                        if (child.type === 'Mesh' || child.type === 'Group') {
+                        if (child.userData?.interactable) {
                             const distance = playerPos.distanceTo(child.position);
-                            
-                            console.log('📦 Found grabbable object:', 
-                                child.userData?.type || 'mesh', 
+                            console.log('📦 Found object:', child.userData.type, 
                                 'at distance:', distance.toFixed(1),
                                 'position:', child.position.x.toFixed(1), child.position.y.toFixed(1), child.position.z.toFixed(1));
                             
@@ -3312,9 +749,9 @@
                     });
                     
                     if (nearest) {
-                        console.log('✅ Nearest grabbable object:', nearest.userData?.type || 'mesh', 'distance:', minDistance.toFixed(1));
+                        console.log('✅ Nearest object:', nearest.userData.type, 'distance:', minDistance.toFixed(1));
                     } else {
-                        console.log('❌ No grabbable objects within range of', minDistance);
+                        console.log('❌ No objects within range of', minDistance);
                     }
                     
                     return nearest;
@@ -3345,364 +782,101 @@
                             break;
                         case 'Space':
                             e.preventDefault();
-                            if (!isJumping && Math.abs(camera.position.y - groundLevel) < 0.1) {
+                            if (!isJumping) {
                                 console.log('🦘 JUMPING!');
                                 isJumping = true;
-                                playerVelocity.y = 0.5; // Initial jump velocity
+                                playerVelocity.y = 0.4; // Initial jump velocity
                             }
                             break;
                         case 'KeyG':
                             console.log('🤏 GRAB ACTION!');
-                            const nearestObject = findNearestGrabbableObject(camera.position, scene);
+                            const nearestObject = findNearestObject(camera.position, scene);
                             if (nearestObject) {
-                                console.log('📦 Successfully grabbed:', nearestObject.userData?.type || 'object');
+                                console.log('📦 Grabbed:', nearestObject.userData.type);
+                                nearestObject.material.color.setHex(0xffffff);
                                 
-                                // Check if it's a coin for money collection
-                                if (nearestObject.userData?.type === 'coin') {
-                                    console.log('💰 COIN COLLECTED! +$1.00');
-                                    playerMoney += 1.00;
-                                    window.game.playerMoney = playerMoney; // Update global reference
-                                    moneyDisplay.innerHTML = `💰 $${playerMoney.toFixed(2)}`;
-                                    
-                                    // Store old position for effect
-                                    const oldPosition = nearestObject.position.clone();
-                                    
-                                    // Remove coin from scene and coins array
-                                    scene.remove(nearestObject);
-                                    const coinIndex = coins.indexOf(nearestObject);
-                                    if (coinIndex > -1) {
-                                        coins.splice(coinIndex, 1);
-                                    }
-                                    
-                                    // Create special coin collection effect
-                                    const coinEffect = new THREE.Mesh(
-                                        new THREE.SphereGeometry(0.3),
-                                        new THREE.MeshBasicMaterial({ 
-                                            color: 0xFFD700,
-                                            transparent: true,
-                                            opacity: 0.9
-                                        })
-                                    );
-                                    coinEffect.position.copy(oldPosition);
-                                    scene.add(coinEffect);
-                                    
-                                    // Animate coin collection effect
-                                    let scale = 0.5;
-                                    const coinAnimation = setInterval(() => {
-                                        scale += 0.2;
-                                        coinEffect.scale.setScalar(scale);
-                                        coinEffect.material.opacity -= 0.1;
-                                        coinEffect.position.y += 0.1;
-                                        
-                                        if (coinEffect.material.opacity <= 0) {
-                                            scene.remove(coinEffect);
-                                            clearInterval(coinAnimation);
-                                        }
-                                    }, 30);
-                                    
-                                    // Show floating text +$1.00
-                                    showFloatingMessage('+$1.00', oldPosition, 0xFFD700);
-                                    
-                                    // Respawn coin in new location after 2 seconds
-                                    setTimeout(() => {
-                                        spawnNewCoin();
-                                    }, 2000);
-                                    
-                                    return; // Don't do regular grab effect for coins
-                                }
-                                
-                                // Check if it's a plant (either for inspection or store purchase)
-                                if (nearestObject.userData?.type === 'plant') {
-                                    // Check if it's a store plant that can be purchased
-                                    if (nearestObject.userData?.isStorePlant && nearestObject.userData?.price) {
-                                        console.log('🛒 Adding plant to cart:', nearestObject.userData.species, '$' + nearestObject.userData.price);
-                                        
-                                        // Add to shopping cart
-                                        const cartItem = {
-                                            plant: nearestObject,
-                                            species: nearestObject.userData.species,
-                                            price: nearestObject.userData.price,
-                                            storeName: nearestObject.userData.storeName || 'Unknown Store'
-                                        };
-                                        
-                                        shoppingCart.push(cartItem);
-                                        totalCartValue += cartItem.price;
-                                        currentStore = cartItem.storeName;
-                                        
-                                        // Visual feedback - plant glows green (in cart)
-                                        nearestObject.traverse((child) => {
-                                            if (child.isMesh && child.material) {
-                                                child.material.color.setHex(0x00FF00); // Green = in cart
-                                            }
-                                        });
-                                        
-                                        // Create cart effect
-                                        const cartEffect = new THREE.Mesh(
-                                            new THREE.SphereGeometry(0.2),
-                                            new THREE.MeshBasicMaterial({ 
-                                                color: 0x00FF00,
-                                                transparent: true,
-                                                opacity: 0.8
-                                            })
-                                        );
-                                        cartEffect.position.copy(nearestObject.position);
-                                        cartEffect.position.y += 0.8;
-                                        scene.add(cartEffect);
-                                        
-                                        // Animate cart effect
-                                        let cartScale = 0.2;
-                                        const cartAnimation = setInterval(() => {
-                                            cartScale += 0.1;
-                                            cartEffect.scale.setScalar(cartScale);
-                                            cartEffect.material.opacity -= 0.1;
-                                            cartEffect.position.y += 0.05;
-                                            
-                                            if (cartEffect.material.opacity <= 0) {
-                                                scene.remove(cartEffect);
-                                                clearInterval(cartAnimation);
-                                            }
-                                        }, 50);
-                                        
-                                        // Show floating price
-                                        showFloatingMessage(`+$${cartItem.price.toFixed(2)}`, nearestObject.position, 0x00FF00);
-                                        updateCartDisplay();
-                                        
-                                        return; // Don't do regular grab effect
-                                    }
-                                    // Regular plant inspection for non-store plants
-                                    else if (nearestObject.userData?.plantId) {
-                                        console.log('🌱 Inspecting plant:', nearestObject.userData.plantId);
-                                        if (window.plantCareSystem) {
-                                            window.plantCareSystem.inspectPlant(nearestObject.userData.plantId);
-                                        }
-                                        
-                                        // Visual feedback for plant inspection
-                                        const inspectEffect = new THREE.Mesh(
-                                            new THREE.SphereGeometry(0.3),
-                                            new THREE.MeshBasicMaterial({ 
-                                                color: 0x00FFFF,
-                                                transparent: true,
-                                                opacity: 0.6
-                                            })
-                                        );
-                                        inspectEffect.position.copy(nearestObject.position);
-                                        inspectEffect.position.y += 0.5;
-                                        scene.add(inspectEffect);
-                                        
-                                        // Animate inspection effect
-                                        let inspectScale = 0.3;
-                                        const inspectAnimation = setInterval(() => {
-                                            inspectScale += 0.1;
-                                            inspectEffect.scale.setScalar(inspectScale);
-                                            inspectEffect.material.opacity -= 0.05;
-                                            
-                                            if (inspectEffect.material.opacity <= 0) {
-                                                scene.remove(inspectEffect);
-                                                clearInterval(inspectAnimation);
-                                            }
-                                        }, 50);
-                                        
-                                        return; // Don't do regular grab effect for plants
-                                    }
-                                }
-                                
-                                // Regular grab effects for non-coin, non-plant objects
-                                // Visual feedback - make object glow white
-                                if (nearestObject.material) {
-                                    const originalColor = nearestObject.material.color.getHex();
-                                    nearestObject.material.color.setHex(0xffffff);
-                                    
-                                    // Restore original color after effect
-                                    setTimeout(() => {
-                                        nearestObject.material.color.setHex(originalColor);
-                                    }, 1000);
-                                }
-                                
-                                // Create bright grab effect sphere
+                                // Create grab effect
                                 const grabEffect = new THREE.Mesh(
-                                    new THREE.SphereGeometry(0.15),
-                                    new THREE.MeshBasicMaterial({ 
-                                        color: 0x00ff00,
-                                        transparent: true,
-                                        opacity: 0.8
-                                    })
+                                    new THREE.SphereGeometry(0.1),
+                                    new THREE.MeshBasicMaterial({ color: 0x00ff00 })
                                 );
                                 grabEffect.position.copy(nearestObject.position);
-                                grabEffect.position.y += 0.6;
+                                grabEffect.position.y += 0.5;
                                 scene.add(grabEffect);
                                 
-                                // Animate grab effect
-                                let scale = 1;
-                                const scaleAnimation = setInterval(() => {
-                                    scale += 0.1;
-                                    grabEffect.scale.setScalar(scale);
-                                    grabEffect.material.opacity -= 0.1;
-                                    
-                                    if (grabEffect.material.opacity <= 0) {
-                                        scene.remove(grabEffect);
-                                        clearInterval(scaleAnimation);
-                                    }
-                                }, 50);
-                                
-                                // Use new holding system for regular objects
-                                holdItem(nearestObject);
-                                
-                            } else {
-                                console.log('❌ No grabbable objects in range');
-                                
-                                // Show "no objects" effect
-                                const noGrabEffect = new THREE.Mesh(
-                                    new THREE.SphereGeometry(0.1),
-                                    new THREE.MeshBasicMaterial({ color: 0xff0000 })
-                                );
-                                noGrabEffect.position.copy(camera.position);
-                                noGrabEffect.position.y -= 0.5;
-                                scene.add(noGrabEffect);
-                                
                                 setTimeout(() => {
-                                    scene.remove(noGrabEffect);
-                                }, 300);
-                            }
-                            break;
-                        case 'KeyE':
-                            console.log('🔗 E key pressed - Interact!');
-                            const nearestInteractable = findNearestGrabbableObject(camera.position, scene);
-                            if (nearestInteractable) {
-                                handleInteraction(nearestInteractable);
+                                    nearestObject.material.color.setHex(nearestObject.userData.originalColor);
+                                    scene.remove(grabEffect);
+                                }, 1000);
                             } else {
-                                console.log('❌ No interactable objects nearby');
+                                console.log('❌ No objects in range');
                             }
                             break;
                         case 'KeyQ':
-                            console.log('🗡️ SMOOTH SWIPE ACTION!');
+                            console.log('🗡️ SWIPE ACTION!');
                             
-                            // Create visible 3D stick
-                            const stickGeometry = new THREE.BoxGeometry(0.08, 0.08, 2);
+                            // Create 3D stick hand extending from camera
+                            const stickGeometry = new THREE.CylinderGeometry(0.05, 0.03, 3, 8);
                             const stickMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
                             const stickHand = new THREE.Mesh(stickGeometry, stickMaterial);
                             
-                            // Get direction player is facing
+                            // Position stick in front of camera
                             const swipeDirection = new THREE.Vector3(0, 0, -1);
                             swipeDirection.applyQuaternion(camera.quaternion);
                             
-                            // Calculate swipe path - from right to left across screen
-                            const rightDirection = new THREE.Vector3(1, 0, 0);
-                            rightDirection.applyQuaternion(camera.quaternion);
+                            stickHand.position.copy(camera.position);
+                            stickHand.position.add(swipeDirection.clone().multiplyScalar(2));
+                            stickHand.position.y -= 0.3; // Lower than camera
                             
-                            // Starting position (right side)
-                            const startPos = camera.position.clone();
-                            startPos.add(swipeDirection.clone().multiplyScalar(2)); // Forward
-                            startPos.add(rightDirection.clone().multiplyScalar(1.5)); // Right
-                            startPos.y -= 0.3; // Lower
-                            
-                            // Ending position (left side)
-                            const endPos = startPos.clone();
-                            endPos.add(rightDirection.clone().multiplyScalar(-3)); // Move left
-                            
-                            // Set initial position
-                            stickHand.position.copy(startPos);
-                            
-                            // Orient stick horizontally
+                            // Orient stick towards target
                             stickHand.lookAt(
-                                startPos.x + rightDirection.x,
-                                startPos.y,
-                                startPos.z + rightDirection.z
+                                camera.position.x + swipeDirection.x * 4,
+                                camera.position.y,
+                                camera.position.z + swipeDirection.z * 4
                             );
+                            stickHand.rotateZ(Math.PI / 2); // Horizontal orientation
                             
                             scene.add(stickHand);
-                            console.log('🦾 Starting smooth swipe animation!');
+                            console.log('🦾 3D Stick hand extended!');
                             
-                            // Smooth animation across screen
-                            let progress = 0;
-                            const swipeSpeed = 0.08; // Animation speed
-                            
-                            const animateSwipe = () => {
-                                progress += swipeSpeed;
-                                
-                                // Interpolate position from start to end
-                                stickHand.position.lerpVectors(startPos, endPos, progress);
-                                
-                                // Check for objects to hit during swipe
-                                const nearbyObjects = [];
-                                scene.children.forEach(child => {
-                                    if (child.userData?.canKnockOver || child.userData?.grabbable) {
-                                        const distance = stickHand.position.distanceTo(child.position);
-                                        if (distance < 1.5) { // Hit range
-                                            nearbyObjects.push(child);
-                                        }
+                            // Find and affect nearby objects
+                            const nearbyObjects = [];
+                            scene.children.forEach(child => {
+                                if (child.userData?.canKnockOver) {
+                                    const distance = camera.position.distanceTo(child.position);
+                                    if (distance < 4) { // Increased range
+                                        nearbyObjects.push(child);
                                     }
-                                });
-                                
-                                // Hit objects
-                                if (nearbyObjects.length > 0) {
-                                    nearbyObjects.forEach(obj => {
-                                        if (!obj.userData.hitBySwipe) { // Prevent multiple hits
-                                            obj.userData.hitBySwipe = true;
-                                            
-                                            console.log('💥 Stick hit:', obj.userData?.type || 'object');
-                                            
-                                            // Visual effect
-                                            if (obj.material) {
-                                                const originalColor = obj.material.color.getHex();
-                                                obj.material.color.setHex(0xff0000);
-                                                setTimeout(() => {
-                                                    obj.material.color.setHex(originalColor);
-                                                    obj.userData.hitBySwipe = false; // Reset hit flag
-                                                }, 800);
-                                            }
-                                            
-                                            // Smooth knock over animation
-                                            const knockDirection = new THREE.Vector3();
-                                            knockDirection.subVectors(obj.position, camera.position).normalize();
-                                            
-                                            // Store original position and rotation
-                                            if (!obj.userData.originalPosition) {
-                                                obj.userData.originalPosition = obj.position.clone();
-                                                obj.userData.originalRotation = obj.rotation.clone();
-                                            }
-                                            
-                                            // Target knocked position
-                                            const targetPos = obj.userData.originalPosition.clone();
-                                            targetPos.x += knockDirection.x * 0.5;
-                                            targetPos.z += knockDirection.z * 0.5;
-                                            targetPos.y -= 0.1;
-                                            
-                                            const targetRotation = obj.userData.originalRotation.clone();
-                                            targetRotation.z += (Math.random() - 0.5) * Math.PI / 3;
-                                            
-                                            // Smooth animation
-                                            let animProgress = 0;
-                                            const animateKnockdown = () => {
-                                                animProgress += 0.1;
-                                                
-                                                // Smooth interpolation
-                                                obj.position.lerpVectors(obj.userData.originalPosition, targetPos, animProgress);
-                                                obj.rotation.x = THREE.MathUtils.lerp(obj.userData.originalRotation.x, targetRotation.x, animProgress);
-                                                obj.rotation.y = THREE.MathUtils.lerp(obj.userData.originalRotation.y, targetRotation.y, animProgress);
-                                                obj.rotation.z = THREE.MathUtils.lerp(obj.userData.originalRotation.z, targetRotation.z, animProgress);
-                                                
-                                                if (animProgress < 1) {
-                                                    requestAnimationFrame(animateKnockdown);
-                                                }
-                                            };
-                                            
-                                            animateKnockdown();
-                                        }
-                                    });
                                 }
-                                
-                                // Continue animation or finish
-                                if (progress < 1) {
-                                    requestAnimationFrame(animateSwipe);
-                                } else {
-                                    // Swipe complete
-                                    scene.remove(stickHand);
-                                    console.log('🦾 Smooth swipe completed!');
-                                }
-                            };
+                            });
                             
-                            // Start the animation
-                            animateSwipe();
+                            if (nearbyObjects.length > 0) {
+                                console.log('💥 Swiped', nearbyObjects.length, 'objects!');
+                                nearbyObjects.forEach(obj => {
+                                    obj.material.color.setHex(0xff0000);
+                                    
+                                    // Realistic knock over effect
+                                    const knockDirection = new THREE.Vector3();
+                                    knockDirection.subVectors(obj.position, camera.position).normalize();
+                                    
+                                    obj.rotation.z = (Math.random() - 0.5) * Math.PI / 3;
+                                    obj.position.x += knockDirection.x * 0.5;
+                                    obj.position.z += knockDirection.z * 0.5;
+                                    obj.position.y -= 0.1;
+                                    
+                                    setTimeout(() => {
+                                        obj.material.color.setHex(obj.userData.originalColor);
+                                    }, 800);
+                                });
+                            } else {
+                                console.log('🌬️ Swipe missed!');
+                            }
+                            
+                            // Animate stick swipe and removal
+                            setTimeout(() => {
+                                scene.remove(stickHand);
+                                console.log('🦾 Stick hand retracted');
+                            }, 800);
                             break;
                         case 'KeyC':
                             isCrouching = !isCrouching;
@@ -3719,27 +893,6 @@
                                 console.log('🏃‍♂️ Sprinting!');
                                 isSprinting = true;
                             }
-                            break;
-                        case 'KeyT':
-                            console.log('📍 Drop item');
-                            dropHeldItem();
-                            break;
-                        case 'KeyF':
-                            console.log('🔦 Toggle flashlight');
-                            toggleFlashlight();
-                            break;
-                        case 'KeyB':
-                            console.log('🐛 Toggle bug zapper');
-                            if (heldItem && heldItem.userData?.type === 'bug_zapper') {
-                                heldItem.userData.active = !heldItem.userData.active;
-                                console.log(`Bug zapper ${heldItem.userData.active ? 'ON' : 'OFF'}`);
-                            }
-                            break;
-                        case 'Digit0': case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4':
-                        case 'Digit5': case 'Digit6': case 'Digit7': case 'Digit8': case 'Digit9':
-                            const slotNumber = parseInt(event.code.replace('Digit', ''));
-                            console.log(`🔢 Selecting inventory slot ${slotNumber}`);
-                            selectFromInventory(slotNumber);
                             break;
                         case 'Escape': 
                             if (isLocked) controls.unlock(); 
@@ -3760,152 +913,9 @@
                     }
                 });
                 
-                // INTERACTION HANDLER
-                function handleInteraction(object) {
-                    const userData = object.userData;
-                    
-                    switch(userData.type) {
-                        case 'npc':
-                            console.log(`💬 Talking to ${userData.name}`);
-                            // Cycle through NPC dialogue
-                            const dialogue = userData.dialogue[userData.currentDialogue];
-                            console.log(`${userData.name}: "${dialogue}"`);
-                            
-                            // Show dialogue on screen
-                            showDialogue(userData.name, dialogue);
-                            
-                            // Move to next dialogue
-                            userData.currentDialogue = (userData.currentDialogue + 1) % userData.dialogue.length;
-                            break;
-                            
-                        case 'store':
-                            console.log(`🏪 Entering ${userData.storeName}`);
-                            showDialogue("Store", `Welcome to ${userData.storeName}! Press G to browse plants for sale!`);
-                            break;
-                            
-                        case 'teleport_pad':
-                            console.log(`🌀 Using teleport: ${userData.padName}`);
-                            // Teleport player
-                            camera.position.x = userData.targetX;
-                            camera.position.z = userData.targetZ;
-                            camera.position.y = groundLevel;
-                            
-                            // Teleport effect
-                            const teleportEffect = new THREE.Mesh(
-                                new THREE.SphereGeometry(2),
-                                new THREE.MeshBasicMaterial({ 
-                                    color: 0x00FFFF,
-                                    transparent: true,
-                                    opacity: 0.5
-                                })
-                            );
-                            teleportEffect.position.copy(camera.position);
-                            scene.add(teleportEffect);
-                            
-                            setTimeout(() => {
-                                scene.remove(teleportEffect);
-                            }, 1000);
-                            
-                            showDialogue("Teleport", `Teleported to new location!`);
-                            break;
-                            
-                        default:
-                            console.log(`🤔 Interacted with ${userData.type || 'unknown object'}`);
-                            break;
-                    }
-                }
-                
-                // DIALOGUE SYSTEM
-                function showDialogue(speaker, message) {
-                    // Remove existing dialogue
-                    const existingDialogue = document.getElementById('dialogue-box');
-                    if (existingDialogue) {
-                        existingDialogue.remove();
-                    }
-                    
-                    // Create dialogue box
-                    const dialogueBox = document.createElement('div');
-                    dialogueBox.id = 'dialogue-box';
-                    dialogueBox.style.cssText = `
-                        position: fixed;
-                        bottom: 20px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 20px;
-                        border-radius: 10px;
-                        font-family: Arial, sans-serif;
-                        font-size: 16px;
-                        max-width: 500px;
-                        text-align: center;
-                        z-index: 1000;
-                        border: 2px solid #00ff00;
-                    `;
-                    
-                    dialogueBox.innerHTML = `
-                        <strong>${speaker}:</strong><br>
-                        ${message}
-                    `;
-                    
-                    document.body.appendChild(dialogueBox);
-                    
-                    // Auto remove after 4 seconds
-                    setTimeout(() => {
-                        if (dialogueBox.parentNode) {
-                            dialogueBox.remove();
-                        }
-                    }, 4000);
-                }
-
-                // OBJECT COLLISION DETECTION
-                function checkObjectCollisions(currentPos, previousPos, scene) {
-                    const playerRadius = 0.5; // Player collision radius
-                    
-                    scene.children.forEach(child => {
-                        // Check collision with solid objects
-                        if (child.type === 'Mesh' && 
-                            child.userData?.type !== 'palm_frond' && // Skip fronds (can walk through)
-                            !child.material?.transparent && // Skip transparent objects
-                            child.material?.color?.getHex() !== 0x4488ff) { // Skip water
-                            
-                            const distance = currentPos.distanceTo(child.position);
-                            const objectRadius = getObjectRadius(child);
-                            
-                            // If too close to object, push player back
-                            if (distance < (playerRadius + objectRadius)) {
-                                console.log('🚫 Collision with:', child.userData?.type || 'object');
-                                
-                                // Calculate push direction
-                                const pushDirection = new THREE.Vector3();
-                                pushDirection.subVectors(currentPos, child.position).normalize();
-                                
-                                // Push player away from object
-                                const pushDistance = (playerRadius + objectRadius) - distance + 0.1;
-                                currentPos.add(pushDirection.multiplyScalar(pushDistance));
-                            }
-                        }
-                    });
-                }
-                
-                // Get object collision radius based on its geometry
-                function getObjectRadius(object) {
-                    if (object.geometry) {
-                        if (object.geometry.type === 'CylinderGeometry') {
-                            return object.geometry.parameters?.radiusTop || 0.3;
-                        } else if (object.geometry.type === 'SphereGeometry') {
-                            return object.geometry.parameters?.radius || 0.3;
-                        } else if (object.geometry.type === 'BoxGeometry') {
-                            const params = object.geometry.parameters;
-                            return Math.max(params?.width || 0.3, params?.depth || 0.3) / 2;
-                        }
-                    }
-                    return 0.3; // Default radius
-                }
-
-                // WORKING BOUNDARY COLLISION (Updated for bigger island)
+                // WORKING BOUNDARY COLLISION
                 function checkBoundaries(position) {
-                    const boundary = 70; // Keep within bigger island (150x150)
+                    const boundary = 48; // Keep within island
                     let hitBoundary = false;
                     
                     if (position.x > boundary) { position.x = boundary; hitBoundary = true; }
@@ -3924,30 +934,7 @@
                 function animate() {
                     requestAnimationFrame(animate);
                     
-                    // Update plant care system
-                    if (window.plantCareSystem) {
-                        window.plantCareSystem.update(1/60); // Assuming 60 FPS
-                    }
-                    
-                    // Update day/night cycle
-                    updateDayNightCycle();
-                    
-                    // Update bugs and bug zappers
-                    updateBugs();
-                    
-                    // Update flashlight position if active
-                    if (flashlightOn && flashlightLight) {
-                        flashlightLight.position.copy(camera.position);
-                        
-                        // Calculate forward direction from camera
-                        const forward = new THREE.Vector3(0, 0, -1);
-                        forward.applyQuaternion(camera.quaternion);
-                        
-                        flashlightLight.target.position.copy(camera.position);
-                        flashlightLight.target.position.add(forward.multiplyScalar(5));
-                    }
-                    
-                    if (isLocked || isThirdPerson) {
+                    if (isLocked) {
                         // Store previous position
                         const prevPosition = camera.position.clone();
                         
@@ -3956,124 +943,29 @@
                         if (isCrouching) speed = 0.08;
                         else if (isSprinting) speed = 0.25;
                         
-                        // Apply movement based on camera mode
-                        if (isThirdPerson) {
-                            // Third person movement - move relative to camera view
-                            const direction = new THREE.Vector3();
-                            
-                            if (moveForward) direction.z -= 1;
-                            if (moveBackward) direction.z += 1;
-                            if (moveLeft) direction.x -= 1;
-                            if (moveRight) direction.x += 1;
-                            
-                            if (direction.length() > 0) {
-                                direction.normalize();
-                                direction.multiplyScalar(speed);
-                                
-                                // Apply camera Y rotation to movement direction
-                                direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraAngleY);
-                                
-                                camera.position.add(direction);
-                            }
-                        } else {
-                            // First person movement - use pointer lock controls
-                            if (moveForward) controls.moveForward(speed);
-                            if (moveBackward) controls.moveForward(-speed);
-                            if (moveLeft) controls.moveRight(-speed);
-                            if (moveRight) controls.moveRight(speed);
-                        }
+                        // Apply movement
+                        if (moveForward) controls.moveForward(speed);
+                        if (moveBackward) controls.moveForward(-speed);
+                        if (moveLeft) controls.moveRight(-speed);
+                        if (moveRight) controls.moveRight(speed);
                         
                         // Handle jumping with proper physics
                         if (isJumping) {
-                            // Update position with velocity
                             camera.position.y += playerVelocity.y;
-                            // Apply gravity (reduce upward velocity)
-                            playerVelocity.y -= 0.03; // Stronger gravity
+                            playerVelocity.y -= 0.025; // Gravity pulls down
                             
-                            // Update ground level based on crouch state
-                            groundLevel = isCrouching ? 1.2 : 2;
-                            
-                            // Land when hitting ground
+                            // Land when hitting ground or going below
+                            const groundLevel = isCrouching ? 1.2 : 2;
                             if (camera.position.y <= groundLevel) {
                                 camera.position.y = groundLevel;
                                 playerVelocity.y = 0;
                                 isJumping = false;
-                                console.log('🔽 Landed! Ground level:', groundLevel);
+                                console.log('🔽 Landed!');
                             }
-                        } else {
-                            // Ensure camera stays at ground level when not jumping
-                            groundLevel = isCrouching ? 1.2 : 2;
-                            camera.position.y = groundLevel;
                         }
-                        
-                        // Object collision detection
-                        checkObjectCollisions(camera.position, prevPosition, scene);
                         
                         // Boundary collision
                         checkBoundaries(camera.position);
-                        
-                        // UPDATE PLAYER CHARACTER AND CAMERA POSITIONING
-                        if (isThirdPerson && cameraDistance > 1) {
-                            // Update camera target to player position
-                            cameraTarget.copy(camera.position);
-                            cameraTarget.y = groundLevel; // Keep target at ground level
-                            
-                            // Position player character at target position
-                            playerCharacter.position.copy(cameraTarget);
-                            playerCharacter.position.y = 0; // Place feet on ground
-                            
-                            // Calculate orbital camera position
-                            const spherical = new THREE.Spherical();
-                            spherical.radius = cameraDistance;
-                            spherical.phi = Math.PI/2 - cameraAngleX; // Vertical angle (0 = top, PI = bottom)
-                            spherical.theta = cameraAngleY; // Horizontal angle
-                            
-                            // Convert spherical to cartesian coordinates
-                            const offset = new THREE.Vector3();
-                            offset.setFromSpherical(spherical);
-                            
-                            // Position camera relative to player
-                            const idealCameraPosition = cameraTarget.clone();
-                            idealCameraPosition.y += 1.5; // Eye level height
-                            idealCameraPosition.add(offset);
-                            
-                            // Smoothly move camera to ideal position
-                            camera.position.lerp(idealCameraPosition, 0.15);
-                            
-                            // Make camera look at player character center
-                            const lookTarget = playerCharacter.position.clone();
-                            lookTarget.y += 1; // Look at player's center
-                            camera.lookAt(lookTarget);
-                            
-                            // Make player character face movement direction when moving
-                            if (moveForward || moveBackward || moveLeft || moveRight) {
-                                const direction = new THREE.Vector3();
-                                if (moveForward) direction.z -= 1;
-                                if (moveBackward) direction.z += 1;
-                                if (moveLeft) direction.x -= 1;
-                                if (moveRight) direction.x += 1;
-                                
-                                if (direction.length() > 0) {
-                                    direction.normalize();
-                                    const targetLook = playerCharacter.position.clone();
-                                    targetLook.add(direction);
-                                    playerCharacter.lookAt(targetLook);
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Check for checkout zone collisions
-                    if (shoppingCart.length > 0) {
-                        scene.children.forEach(object => {
-                            if (object.userData?.type === 'checkout_zone') {
-                                const distance = camera.position.distanceTo(object.position);
-                                if (distance < 2.0) { // Within checkout zone
-                                    console.log(`🛒 Attempting checkout at ${object.userData.storeName}`);
-                                    attemptCheckout(object.userData.storeName, object.userData.npcName);
-                                }
-                            }
-                        });
                     }
                     
                     renderer.render(scene, camera);
@@ -4081,19 +973,9 @@
                 
                 animate();
                 
-                // Store game reference globally for save system
-                window.game = {
-                    scene: scene,
-                    camera: camera,
-                    renderer: renderer,
-                    playerMoney: playerMoney,
-                    coins: coins
-                };
-                
                 console.log('✅ ENHANCED 3D Carnivorous Plants Paradise loaded!');
                 console.log('🎮 Controls: WASD=Move, Space=Jump, G=Grab, Q=Swipe, C=Crouch, Shift=Sprint');
                 console.log('🌴 Explore the massive tropical island with 5 greenhouses!');
-                console.log('💾 Save system enabled - your progress will be preserved!');
                 
             } catch (error) {
                 console.error('❌ Game failed:', error);
