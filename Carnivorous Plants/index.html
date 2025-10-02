@@ -460,7 +460,7 @@
                 };
                 
                 // Add palm trees around the island
-                for (let i = 0; i < 20; i++) {
+                for (let i = 0; i < 15; i++) {
                     const x = (Math.random() - 0.5) * 80;
                     const z = (Math.random() - 0.5) * 80;
                     if (Math.abs(x) > 15 || Math.abs(z) > 15) { // Don't place in center area
@@ -698,11 +698,91 @@
                     scene.add(rock);
                 }
                 
+                // SIMPLE POND (fixed positioning to avoid glitches)
+                const pondGeometry = new THREE.CylinderGeometry(5, 5, 0.1, 16);
+                const pondMaterial = new THREE.MeshLambertMaterial({ 
+                    color: 0x4488ff, 
+                    transparent: true, 
+                    opacity: 0.9 
+                });
+                const simplePond = new THREE.Mesh(pondGeometry, pondMaterial);
+                simplePond.position.set(15, 0.05, 15); // Slightly above ground to avoid z-fighting
+                simplePond.userData = { type: 'pond', interactable: true, name: 'Simple Pond' };
+                scene.add(simplePond);
+                
+                console.log('✅ Simple pond created successfully!');
+                
+                // SIMPLE DIVING MECHANICS (no complex objects - just camera movement)
+                let isInWater = false;
+                const waterLevel = 0; // Surface level of pond
+                const pondCenter = new THREE.Vector3(15, 0, 15);
+                const pondRadius = 8; // Larger radius for easier detection
+                
+                function checkWaterDiving() {
+                    const playerPos = camera.position;
+                    const distanceToPond = Math.sqrt((playerPos.x - pondCenter.x) ** 2 + (playerPos.z - pondCenter.z) ** 2);
+                    
+                    // Check if player is within pond area
+                    if (distanceToPond <= pondRadius) {
+                        if (!isInWater) {
+                            isInWater = true;
+                            console.log('💧 ENTERED WATER! Look up/down to dive!');
+                            scene.fog.color.setHex(0x4477aa); // More obvious blue tint
+                        }
+                        
+                        if (isInWater && !flyMode && !isDead) {
+                            // Get camera's look direction
+                            const lookDirection = new THREE.Vector3();
+                            camera.getWorldDirection(lookDirection);
+                            
+                            // If looking down, dive down
+                            if (lookDirection.y < -0.1) { // More sensitive
+                                playerPos.y -= 0.1; // Faster descent
+                                if (Math.random() < 0.05) console.log('⬇️ Diving...');
+                            }
+                            // If looking up, surface
+                            else if (lookDirection.y > 0.1) { // More sensitive
+                                playerPos.y += 0.1; // Faster ascent
+                                if (Math.random() < 0.05) console.log('⬆️ Surfacing...');
+                            }
+                            
+                            // Limit diving depth
+                            if (playerPos.y < -20) {
+                                playerPos.y = -20;
+                                console.log('🌊 Hit ocean floor!');
+                            }
+                            
+                            // Prevent going too high above water
+                            if (playerPos.y > waterLevel + 5) {
+                                playerPos.y = waterLevel + 5;
+                            }
+                        }
+                    } else if (isInWater) {
+                        // Left pond area
+                        isInWater = false;
+                        console.log('🏖️ LEFT WATER AREA!');
+                        scene.fog.color.setHex(0x87CEEB); // Restore original sky color
+                        
+                        // Surface if underwater
+                        if (playerPos.y < waterLevel) {
+                            playerPos.y = waterLevel + 1;
+                            console.log('🏄‍♀️ Auto-surfaced!');
+                        }
+                    }
+                }
+                
                 // WORKING CONTROLS WITH PHYSICS
                 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
                 let isLocked = false;
                 let isCrouching = false, isSprinting = false, isJumping = false;
                 let playerVelocity = { x: 0, y: 0, z: 0 };
+                
+                // FLY MODE CONTROLS
+                let flyMode = false;
+                let flyHeight = 0;
+                const maxFlyHeight = 50; // Maximum altitude
+                const fallDamageHeight = 10; // Height that causes fall damage
+                let isDead = false;
                 
                 // Mouse lock controls
                 const controls = new THREE.PointerLockControls(camera, document.body);
@@ -729,7 +809,7 @@
                 // Enhanced object interaction with debugging
                 function findNearestObject(playerPos, scene) {
                     let nearest = null;
-                    let minDistance = 5; // Increased grab range
+                    let minDistance = 8; // Increased grab range for stores/NPCs
                     
                     console.log('🔍 Looking for objects near position:', 
                         playerPos.x.toFixed(1), playerPos.y.toFixed(1), playerPos.z.toFixed(1));
@@ -737,7 +817,7 @@
                     scene.children.forEach(child => {
                         if (child.userData?.interactable) {
                             const distance = playerPos.distanceTo(child.position);
-                            console.log('📦 Found object:', child.userData.type, 
+                            console.log(`📦 Found ${child.userData.type}: ${child.userData.name || 'unnamed'}`, 
                                 'at distance:', distance.toFixed(1),
                                 'position:', child.position.x.toFixed(1), child.position.y.toFixed(1), child.position.z.toFixed(1));
                             
@@ -749,7 +829,7 @@
                     });
                     
                     if (nearest) {
-                        console.log('✅ Nearest object:', nearest.userData.type, 'distance:', minDistance.toFixed(1));
+                        console.log('✅ Nearest object:', nearest.userData.type, nearest.userData.name || 'unnamed', 'distance:', minDistance.toFixed(1));
                     } else {
                         console.log('❌ No objects within range of', minDistance);
                     }
@@ -759,9 +839,9 @@
                 
                 // FIXED KEYBOARD CONTROLS
                 document.addEventListener('keydown', (e) => {
-                    if (!isLocked) return;
+                    console.log('🔥 KEY PRESSED:', e.code, 'Mouse locked:', isLocked);
                     
-                    console.log('⌨️ Key pressed:', e.code);
+                    if (!isLocked) return;
                     
                     switch(e.code) {
                         case 'KeyW': case 'ArrowUp': 
@@ -782,14 +862,53 @@
                             break;
                         case 'Space':
                             e.preventDefault();
-                            if (!isJumping) {
+                            if (flyMode) {
+                                // In fly mode, space always goes up - NO JUMPING PHYSICS
+                                console.log('🚀 Flying up with Space!');
+                                camera.position.y += 0.3;
+                                flyHeight = camera.position.y;
+                                if (camera.position.y > maxFlyHeight) {
+                                    camera.position.y = maxFlyHeight;
+                                    flyHeight = maxFlyHeight;
+                                }
+                                // IMPORTANT: Don't set isJumping in fly mode
+                            } else if (!isJumping) {
                                 console.log('🦘 JUMPING!');
                                 isJumping = true;
-                                playerVelocity.y = 0.4; // Initial jump velocity
+                                playerVelocity.y = 0.6; // Higher jump - was 0.4
+                            }
+                            break;
+                        case 'CapsLock':
+                            e.preventDefault();
+                            flyMode = !flyMode;
+                            if (flyMode) {
+                                console.log('🚀🚀🚀 FLY MODE ON! 🚀🚀🚀');
+                                console.log('Height:', camera.position.y);
+                                flyHeight = camera.position.y;
+                                maxFallHeight = camera.position.y;
+                                // COMPLETELY STOP ALL PHYSICS IN FLY MODE
+                                isJumping = false;
+                                playerVelocity.y = 0;
+                                playerVelocity.x = 0;
+                                playerVelocity.z = 0;
+                            } else {
+                                console.log('💥💥💥 FLY MODE OFF - RESTORING NORMAL PHYSICS! 💥💥💥');
+                                console.log('Starting fall from height:', camera.position.y);
+                                maxFallHeight = camera.position.y;
+                                
+                                // RESTORE NORMAL PHYSICS - start falling if high up
+                                if (camera.position.y > 3) {
+                                    isJumping = true;
+                                    playerVelocity.y = -0.3; // Fast fall from height
+                                } else {
+                                    // On ground - restore normal state
+                                    isJumping = false;
+                                    playerVelocity.y = 0;
+                                }
                             }
                             break;
                         case 'KeyG':
-                            console.log('🤏 GRAB ACTION!');
+                            console.log('🤏 GRAB/INTERACT ACTION!');
                             const nearestObject = findNearestObject(camera.position, scene);
                             if (nearestObject) {
                                 console.log('📦 Grabbed:', nearestObject.userData.type);
@@ -805,7 +924,9 @@
                                 scene.add(grabEffect);
                                 
                                 setTimeout(() => {
-                                    nearestObject.material.color.setHex(nearestObject.userData.originalColor);
+                                    if (nearestObject.userData.originalColor) {
+                                        nearestObject.material.color.setHex(nearestObject.userData.originalColor);
+                                    }
                                     scene.remove(grabEffect);
                                 }, 1000);
                             } else {
@@ -930,42 +1051,186 @@
                     return hitBoundary;
                 }
                 
+                // FALL DAMAGE AND DEATH SYSTEM
+                let maxFallHeight = 0;
+                
+                function handleFallDamage() {
+                    const currentHeight = camera.position.y;
+                    const groundLevel = 2;
+                    
+                    // Track maximum height during fall
+                    if (!flyMode && isJumping && playerVelocity.y < 0) {
+                        maxFallHeight = Math.max(maxFallHeight, currentHeight);
+                    }
+                    
+                    // Check if just landed from dangerous height
+                    if (!flyMode && isJumping && currentHeight <= groundLevel && playerVelocity.y < 0) {
+                        const fallDistance = maxFallHeight - groundLevel;
+                        console.log(`Fall distance: ${fallDistance.toFixed(1)} units`);
+                        
+                        if (fallDistance > fallDamageHeight) {
+                            // Death from fall damage - only when actually hitting ground
+                            isDead = true;
+                            maxFallHeight = 0; // Reset
+                            console.log('💀 FATAL FALL ON IMPACT!');
+                            
+                            // Black screen with red "oops" text
+                            document.body.style.background = 'black';
+                            const oopsDiv = document.createElement('div');
+                            oopsDiv.style.position = 'fixed';
+                            oopsDiv.style.top = '50%';
+                            oopsDiv.style.left = '50%';
+                            oopsDiv.style.transform = 'translate(-50%, -50%)';
+                            oopsDiv.style.color = 'red';
+                            oopsDiv.style.fontSize = '3em';
+                            oopsDiv.style.fontWeight = 'bold';
+                            oopsDiv.style.zIndex = '10000';
+                            oopsDiv.style.textAlign = 'center';
+                            oopsDiv.innerHTML = '*oops.<br>try not to go so high next time!*';
+                            document.body.appendChild(oopsDiv);
+                            
+                            // Respawn after 3 seconds
+                            setTimeout(() => {
+                                document.body.removeChild(oopsDiv);
+                                document.body.style.background = '';
+                                camera.position.set(0, 2, 5); // Respawn at start
+                                flyHeight = 2;
+                                maxFallHeight = 0;
+                                isDead = false;
+                                flyMode = false;
+                                isJumping = false;
+                                playerVelocity.y = 0;
+                                console.log('♻️ Respawned!');
+                            }, 3000);
+                        } else {
+                            maxFallHeight = 0; // Reset for next fall
+                        }
+                    }
+                    
+                    // Reset fall height when on ground and not falling
+                    if (currentHeight <= groundLevel && !isJumping) {
+                        maxFallHeight = 0;
+                    }
+                }
+                
+                // FLY MODE MECHANICS
+                function handleFlyMode() {
+                    if (flyMode && !isDead) {
+                        // Get camera's look direction for fly controls
+                        const lookDirection = new THREE.Vector3();
+                        camera.getWorldDirection(lookDirection);
+                        
+                        // If looking up significantly, fly up
+                        if (lookDirection.y > 0.2) { // Looking up
+                            flyHeight += 0.06; // Faster ascent
+                            camera.position.y += 0.06;
+                            if (Math.random() < 0.02) console.log('⬆️ Flying up...');
+                        }
+                        // If looking down significantly, fly down (but don't fall)
+                        else if (lookDirection.y < -0.2) { // Looking down
+                            flyHeight -= 0.06; // Faster descent
+                            camera.position.y -= 0.06;
+                            if (Math.random() < 0.02) console.log('⬇️ Flying down...');
+                        }
+                        
+                        // Limit altitude
+                        if (camera.position.y > maxFlyHeight) {
+                            camera.position.y = maxFlyHeight;
+                            flyHeight = maxFlyHeight;
+                        }
+                        if (camera.position.y < 2) {
+                            camera.position.y = 2;
+                            flyHeight = 2;
+                        }
+                    }
+                }
+                
                 // ENHANCED ANIMATION LOOP
                 function animate() {
                     requestAnimationFrame(animate);
                     
-                    if (isLocked) {
-                        // Store previous position
-                        const prevPosition = camera.position.clone();
+                    if (!isDead) {
+                        // Check diving mechanics (simple camera-only movement)
+                        checkWaterDiving();
                         
-                        // Movement speeds
-                        let speed = 0.15; // Base speed
-                        if (isCrouching) speed = 0.08;
-                        else if (isSprinting) speed = 0.25;
+                        // Handle fly mode mechanics
+                        handleFlyMode();
                         
-                        // Apply movement
-                        if (moveForward) controls.moveForward(speed);
-                        if (moveBackward) controls.moveForward(-speed);
-                        if (moveLeft) controls.moveRight(-speed);
-                        if (moveRight) controls.moveRight(speed);
-                        
-                        // Handle jumping with proper physics
-                        if (isJumping) {
-                            camera.position.y += playerVelocity.y;
-                            playerVelocity.y -= 0.025; // Gravity pulls down
-                            
-                            // Land when hitting ground or going below
-                            const groundLevel = isCrouching ? 1.2 : 2;
-                            if (camera.position.y <= groundLevel) {
-                                camera.position.y = groundLevel;
-                                playerVelocity.y = 0;
-                                isJumping = false;
-                                console.log('🔽 Landed!');
-                            }
+                        // DEBUG: Show current status every 2 seconds
+                        if (Date.now() % 2000 < 16) { // Roughly every 2 seconds
+                            const distToPond = Math.sqrt((camera.position.x - 15) ** 2 + (camera.position.z - 15) ** 2);
+                            console.log(`STATUS: Fly=${flyMode}, Jump=${isJumping}, Y=${camera.position.y.toFixed(1)}, VelY=${playerVelocity.y.toFixed(2)}`);
+                            console.log(`POSITION: (${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}) - Pond dist: ${distToPond.toFixed(1)}`);
                         }
                         
-                        // Boundary collision
-                        checkBoundaries(camera.position);
+                        if (isLocked) {
+                            // Store previous position
+                            const prevPosition = camera.position.clone();
+                            
+                            if (flyMode) {
+                                // FLY MODE MOVEMENT - COMPLETELY OVERRIDE PHYSICS
+                                let speed = 0.2; // Slightly faster flying
+                                if (isSprinting) speed = 0.3;
+                                
+                                // Apply movement
+                                if (moveForward) controls.moveForward(speed);
+                                if (moveBackward) controls.moveForward(-speed);
+                                if (moveLeft) controls.moveRight(-speed);
+                                if (moveRight) controls.moveRight(speed);
+                                
+                                // COMPLETELY DISABLE ALL PHYSICS IN FLY MODE - EVERY FRAME
+                                isJumping = false;
+                                playerVelocity.y = 0;
+                                playerVelocity.x = 0;
+                                playerVelocity.z = 0;
+                                
+                                // Update fly height tracking
+                                flyHeight = camera.position.y;
+                                
+                                // SKIP ALL NORMAL PHYSICS BELOW
+                                
+                            } else {
+                                // NORMAL GROUND MOVEMENT
+                                let speed = 0.15; // Base speed
+                                if (isCrouching) speed = 0.08;
+                                else if (isSprinting) speed = 0.25;
+                                
+                                // Apply movement
+                                if (moveForward) controls.moveForward(speed);
+                                if (moveBackward) controls.moveForward(-speed);
+                                if (moveLeft) controls.moveRight(-speed);
+                                if (moveRight) controls.moveRight(speed);
+                                
+                                // Handle jumping with proper physics
+                                if (isJumping) {
+                                    camera.position.y += playerVelocity.y;
+                                    
+                                    // Different gravity for normal jumps vs fast falling from fly mode
+                                    if (playerVelocity.y < -0.1) {
+                                        // Fast falling (from fly mode exit)
+                                        playerVelocity.y -= 0.12; // Very fast gravity for falling
+                                    } else {
+                                        // Normal jumping
+                                        playerVelocity.y -= 0.035; // Moderate gravity for normal jumps
+                                    }
+                                    
+                                    // Land when hitting ground or going below
+                                    const groundLevel = isCrouching ? 1.2 : 2;
+                                    if (camera.position.y <= groundLevel) {
+                                        camera.position.y = groundLevel;
+                                        playerVelocity.y = 0;
+                                        isJumping = false;
+                                        console.log('🔽 Landed!');
+                                    }
+                                }
+                                
+                                // Check for fall damage
+                                handleFallDamage();
+                            }
+                            
+                            // Boundary collision
+                            checkBoundaries(camera.position);
+                        }
                     }
                     
                     renderer.render(scene, camera);
@@ -975,7 +1240,10 @@
                 
                 console.log('✅ ENHANCED 3D Carnivorous Plants Paradise loaded!');
                 console.log('🎮 Controls: WASD=Move, Space=Jump, G=Grab, Q=Swipe, C=Crouch, Shift=Sprint');
+                console.log('✈️ FLY MODE: Press Caps Lock to toggle fly mode. Look up/down to fly, Space=Up');
+                console.log('⚠️ WARNING: FAST fall damage! If you fall from high altitude, you\'ll die and respawn!');
                 console.log('🌴 Explore the massive tropical island with 5 greenhouses!');
+                console.log('🏊‍♀️ DIVING: Go to pond at (15,15) and look down to dive, look up to surface!');
                 
             } catch (error) {
                 console.error('❌ Game failed:', error);
