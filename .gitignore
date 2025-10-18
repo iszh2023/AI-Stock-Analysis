@@ -1,0 +1,5 @@
+# macOS Finder metadata
+.DS_Store
+
+# Local workspace archives (kept out of the repo)
+/_archive/
