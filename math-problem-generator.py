@@ -17,7 +17,7 @@ def hex_to_rgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 name="MathAI"
-print (f"Hello, my name is {name}. I'm here to help! If you're using Replit, simply open VNC. If you're using your local IDE, just run the code and a new window should appear.")
+print (f"Hello, my name is {name}. I'm here to help! If you're using Replit, simply open VNC; if you're using your local IDE, just run the code and a new window should appear. (If that doesn't work, try installing an extension to help)")
 
 def rgb_to_hex(r, g, b):
     r = max(0, min(255, r))
