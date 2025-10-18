@@ -1,0 +1,13 @@
+# macOS Finder noise
+.DS_Store
+
+# Workspace folders to keep local only
+/Carnivorous Plants/
+/Khan Coding/
+/git/
+/Coding.code-workspace
+
+# Virtual environments
+/.venv/
+/.venv-old/
+
