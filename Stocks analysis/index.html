@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stocks Analysis Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Stocks Analysis</h1>
+      <p class="tagline">Quick snapshots powered by Yahoo Finance quote data</p>
+      <form id="search-form">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search by ticker (e.g. AAPL, MSFT, NVDA)"
+          autocomplete="off"
+          required
+        />
+        <button type="submit">Search</button>
+      </form>
+      <p class="hint">
+        Tip: open this folder with VS Code and use the Live Server extension to
+        avoid CORS issues.
+      </p>
+    </header>
+
+    <main>
+      <section class="feature-card" id="feature-card">
+        <h2>Featured Pick</h2>
+        <div class="feature-body" id="feature-body">
+          <p>Loading featured insights…</p>
+        </div>
+      </section>
+
+      <section class="results">
+        <h2>Quote Lookup</h2>
+        <div id="results-container" class="results-container">
+          <p class="placeholder">Search a ticker to see detailed quote data.</p>
+        </div>
+      </section>
+
+      <section class="watchlist">
+        <h2>Trending Watchlist</h2>
+        <div id="watchlist-container" class="watchlist-container"></div>
+      </section>
+    </main>
+
+    <template id="quote-card-template">
+      <article class="quote-card">
+        <div class="quote-top">
+          <h3 class="symbol"></h3>
+          <span class="name"></span>
+        </div>
+        <div class="quote-middle">
+          <span class="price"></span>
+          <span class="change"></span>
+        </div>
+        <dl class="metrics">
+          <div>
+            <dt>Day Range</dt>
+            <dd class="day-range"></dd>
+          </div>
+          <div>
+            <dt>52W Range</dt>
+            <dd class="year-range"></dd>
+          </div>
+          <div>
+            <dt>Volume</dt>
+            <dd class="volume"></dd>
+          </div>
+          <div>
+            <dt>Market Cap</dt>
+            <dd class="market-cap"></dd>
+          </div>
+        </dl>
+        <button class="quick-google" type="button">View on Google Finance</button>
+      </article>
+    </template>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
