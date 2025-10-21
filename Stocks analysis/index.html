@@ -8,8 +8,11 @@
   </head>
   <body>
     <header>
+      <button id="open-settings" class="settings-btn" type="button">
+        Settings ⚙️
+      </button>
       <h1>Stocks Analysis</h1>
-      <p class="tagline">Quick snapshots powered by Yahoo Finance quote data</p>
+      <p class="tagline">Global quote snapshots powered by Yahoo Finance data</p>
       <form id="search-form">
         <input
           type="text"
@@ -27,11 +30,44 @@
     </header>
 
     <main>
-      <section class="feature-card" id="feature-card">
-        <h2>Featured Pick</h2>
+      <section class="feature-card best-card" id="feature-card">
+        <div class="feature-header">
+          <h2>Top Pick · #1</h2>
+          <span class="disclaimer">AI-generated idea · verify before investing</span>
+        </div>
         <div class="feature-body" id="feature-body">
           <p>Loading featured insights…</p>
         </div>
+      </section>
+
+      <section class="feature-card worst-card" id="worst-card">
+        <div class="feature-header">
+          <h2>Biggest Risk · #1</h2>
+          <span class="disclaimer danger">High-risk call · confirm fundamentals</span>
+        </div>
+        <div class="feature-body" id="worst-body">
+          <p>Scanning laggards…</p>
+        </div>
+      </section>
+
+      <section class="leaders">
+        <div class="leaders-column">
+          <h2>Top 10 Momentum Leaders</h2>
+          <div id="top-ten" class="leaders-list"></div>
+        </div>
+        <div class="leaders-column">
+          <h2>Top 10 Underperformers</h2>
+          <div id="bottom-ten" class="leaders-list"></div>
+        </div>
+      </section>
+
+      <section class="criteria">
+        <h2>How Picks Are Ranked</h2>
+        <ul>
+          <li>Universe is filtered to companies with market cap above <strong>$5B</strong>.</li>
+          <li>Daily percentage change determines the #1 best, #1 worst, and Top 10 lists.</li>
+          <li>Data is refreshed from Yahoo Finance live endpoints with AI-assisted ranking logic.</li>
+        </ul>
       </section>
 
       <section class="results">
@@ -46,6 +82,47 @@
         <div id="watchlist-container" class="watchlist-container"></div>
       </section>
     </main>
+
+    <div id="settings-backdrop" class="settings-backdrop"></div>
+    <section id="settings-panel" class="settings-panel" aria-hidden="true">
+      <h2>Dashboard Settings</h2>
+      <p>Adjust appearance preferences for your market overview.</p>
+      <form id="settings-form">
+        <fieldset>
+          <legend>Theme</legend>
+          <div class="theme-options">
+            <label>
+              <input type="radio" name="theme" value="light" />
+              Light (default)
+            </label>
+            <label>
+              <input type="radio" name="theme" value="dark" />
+              Dark
+            </label>
+            <label>
+              <input type="radio" name="theme" value="peach" />
+              Peach
+            </label>
+            <label>
+              <input type="radio" name="theme" value="tan" />
+              Tan
+            </label>
+            <label>
+              <input type="radio" name="theme" value="seasonal" checked />
+              Seasonal (auto detects current season)
+            </label>
+          </div>
+        </fieldset>
+      </form>
+      <p id="season-note" class="season-note">
+        Current seasonal palette: <strong id="season-label">—</strong>
+      </p>
+      <div class="settings-actions">
+        <button type="button" class="close-settings" id="close-settings">
+          Close
+        </button>
+      </div>
+    </section>
 
     <template id="quote-card-template">
       <article class="quote-card">

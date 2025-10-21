@@ -5,9 +5,17 @@ Lightweight client-side dashboard that pulls quote snapshots from Yahoo Finance‚
 ## Features
 
 - Featured ‚Äúbest stock right now‚Äù card highlighting NVDA with daily stats.
-- Search box for any ticker symbol (fetches `https://query1.finance.yahoo.com/v7/finance/quote`).
+- Search box for any ticker symbol with automatic market detection (US, Hong Kong, London, Toronto, Sydney, Tokyo, etc.).
+- AI-curated #1 best and #1 worst movers plus Top 10 leader/laggard lists with quick Google Finance links.
+- In-app Settings menu to flip between light, dark, peach, tan, or an auto seasonal theme.
 - Trending watchlist tiles for big tech names with quick links to Google Finance.
 - Fallback metrics if the live API call fails, so the UI still renders data offline.
+
+### Ranking Criteria
+
+- Only companies with market caps above **$5B USD** are considered for best/worst lists.
+- Rankings are based on the **daily percentage move** from Yahoo Finance quote data.
+- Featured pick = top gainer; biggest risk = largest decliner; both derived automatically on load.
 
 ## Getting Started
 
@@ -20,6 +28,6 @@ Lightweight client-side dashboard that pulls quote snapshots from Yahoo Finance‚
 
 ## Customizing
 
+- Use the **Settings** button (top-right) to switch themes or enable seasonal mode.
 - Edit `trendingTickers` in `app.js` to track your own symbols.
 - Adjust `featuredTicker` to highlight a different pick on load.
-- Add additional style tweaks in `styles.css` (currently tuned for dark mode).
