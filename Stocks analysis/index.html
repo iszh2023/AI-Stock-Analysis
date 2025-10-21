@@ -6,7 +6,7 @@
     <title>Stocks Analysis Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="theme-light">
     <header>
       <button id="open-settings" class="settings-btn" type="button">
         Settings ⚙️
@@ -17,7 +17,7 @@
         <input
           type="text"
           id="search-input"
-          placeholder="Search by ticker (e.g. AAPL, MSFT, NVDA)"
+          placeholder="Search by ticker (e.g. AAPL, NVDA, 0700.HK)"
           autocomplete="off"
           required
         />
@@ -30,43 +30,41 @@
     </header>
 
     <main>
-      <section class="feature-card best-card" id="feature-card">
-        <div class="feature-header">
-          <h2>Top Pick · #1</h2>
-          <span class="disclaimer">AI-generated idea · verify before investing</span>
-        </div>
+      <section class="feature-card best-card">
+        <h2>Top Pick · #1</h2>
         <div class="feature-body" id="feature-body">
           <p>Loading featured insights…</p>
         </div>
       </section>
 
-      <section class="feature-card worst-card" id="worst-card">
-        <div class="feature-header">
-          <h2>Biggest Risk · #1</h2>
-          <span class="disclaimer danger">High-risk call · confirm fundamentals</span>
-        </div>
+      <section class="feature-card worst-card">
+        <h2>Biggest Risk · #1</h2>
         <div class="feature-body" id="worst-body">
           <p>Scanning laggards…</p>
         </div>
       </section>
 
       <section class="leaders">
-        <div class="leaders-column">
+        <div>
           <h2>Top 10 Momentum Leaders</h2>
-          <div id="top-ten" class="leaders-list"></div>
+          <div id="top-ten" class="leaders-list">
+            <p class="placeholder">Gathering leaders…</p>
+          </div>
         </div>
-        <div class="leaders-column">
+        <div>
           <h2>Top 10 Underperformers</h2>
-          <div id="bottom-ten" class="leaders-list"></div>
+          <div id="bottom-ten" class="leaders-list">
+            <p class="placeholder">Gathering laggards…</p>
+          </div>
         </div>
       </section>
 
       <section class="criteria">
         <h2>How Picks Are Ranked</h2>
         <ul>
-          <li>Universe is filtered to companies with market cap above <strong>$5B</strong>.</li>
+          <li>Universe is limited to companies with market cap above <strong>$5B</strong>.</li>
           <li>Daily percentage change determines the #1 best, #1 worst, and Top 10 lists.</li>
-          <li>Data is refreshed from Yahoo Finance live endpoints with AI-assisted ranking logic.</li>
+          <li>Featured pick = top gainer, biggest risk = top decliner among large caps.</li>
         </ul>
       </section>
 
@@ -79,7 +77,9 @@
 
       <section class="watchlist">
         <h2>Trending Watchlist</h2>
-        <div id="watchlist-container" class="watchlist-container"></div>
+        <div id="watchlist-container" class="watchlist-container">
+          <p class="placeholder">Loading watchlist…</p>
+        </div>
       </section>
     </main>
 
@@ -113,14 +113,48 @@
             </label>
           </div>
         </fieldset>
+        <fieldset>
+          <legend>Refresh Frequency</legend>
+          <select id="refresh-interval">
+            <option value="15">Every 15 minutes</option>
+            <option value="30">Every 30 minutes</option>
+            <option value="60" selected>Every 60 minutes</option>
+          </select>
+        </fieldset>
+        <fieldset>
+          <legend>Ranking Method</legend>
+          <div class="theme-options">
+            <label>
+              <input type="radio" name="ranking-mode" value="daily" checked />
+              Daily change (today's movers)
+            </label>
+            <label>
+              <input type="radio" name="ranking-mode" value="momentum" />
+              Momentum forecast (AI heuristic)
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="display-options">
+          <legend>Display Options</legend>
+          <label>
+            <input type="checkbox" id="toggle-watchlist" checked />
+            Show watchlist panel
+          </label>
+          <label>
+            <input type="checkbox" id="toggle-highlight" checked />
+            Highlight AI outlook tags
+          </label>
+          <label>
+            <input type="checkbox" id="toggle-new-tab" checked />
+            Open finance links in new tab
+          </label>
+        </fieldset>
       </form>
-      <p id="season-note" class="season-note">
+      <p class="season-note">
         Current seasonal palette: <strong id="season-label">—</strong>
       </p>
       <div class="settings-actions">
-        <button type="button" class="close-settings" id="close-settings">
-          Close
-        </button>
+        <button type="button" id="close-settings">Close</button>
       </div>
     </section>
 

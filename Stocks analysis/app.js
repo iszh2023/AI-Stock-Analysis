@@ -1,6 +1,7 @@
 const API_ENDPOINT = "https://query1.finance.yahoo.com/v7/finance/quote";
+const LARGE_CAP_THRESHOLD = 5_000_000_000; // $5B
 
-const trendingTickers = [
+const TRENDING_TICKERS = [
   "NVDA",
   "AAPL",
   "MSFT",
@@ -15,371 +16,8 @@ const trendingTickers = [
   "3690.HK",
   "NTES",
 ];
-const featuredTicker = "NVDA";
-const LARGE_CAP_THRESHOLD = 5_000_000_000; // $5B minimum market cap
-const MARKET_SUFFIXES = ["", ".HK", ".SZ", ".SS", ".L", ".TO", ".AX", ".T", ".PA", ".F"];
-const THEME_STORAGE_KEY = "stocks-dashboard-theme";
 
-let settingsBtn;
-let settingsPanel;
-let settingsBackdrop;
-let closeSettingsButton;
-let settingsForm;
-let themeRadios = [];
-let seasonNote;
-let seasonLabel;
-let featureBody;
-let worstBody;
-let watchlistContainer;
-let topTenContainer;
-let bottomTenContainer;
-let resultsContainer;
-let quoteTemplate;
-let searchForm;
-let searchInput;
-
-const THEMES = {
-  light: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#f0f6ff",
-      "--bg-gradient": "radial-gradient(circle at top right, #e0edff 0%, #f4f7ff 45%, #f8fbff 100%)",
-      "--header-gradient": "linear-gradient(140deg, #eef4ff 0%, #ecfeff 50%, #f9f5ff 100%)",
-      "--bg-card": "rgba(255, 255, 255, 0.88)",
-      "--bg-accent": "linear-gradient(135deg, #68d5f7, #8b9dfc)",
-      "--form-bg": "rgba(255, 255, 255, 0.7)",
-      "--text": "#0f172a",
-      "--text-muted": "#556987",
-      "--accent": "#4f46e5",
-      "--accent-soft": "rgba(79, 70, 229, 0.12)",
-      "--positive": "#22c55e",
-      "--negative": "#ef4444",
-      "--shadow-lg": "0 40px 60px rgba(15, 23, 42, 0.12)",
-      "--card-highlight": "rgba(241, 245, 255, 0.88)",
-      "--card-border": "rgba(148, 163, 184, 0.16)",
-      "--card-warning": "rgba(254, 226, 226, 0.9)",
-      "--card-warning-border": "rgba(248, 113, 113, 0.22)",
-      "--warning-text": "#b91c1c",
-    },
-  },
-  dark: {
-    colorScheme: "dark",
-    vars: {
-      "--bg": "#020617",
-      "--bg-gradient": "radial-gradient(circle at top, #0f172a 0%, #020617 60%)",
-      "--header-gradient": "linear-gradient(140deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.85) 100%)",
-      "--bg-card": "rgba(15, 23, 42, 0.9)",
-      "--bg-accent": "linear-gradient(135deg, #38bdf8, #1d4ed8)",
-      "--form-bg": "rgba(15, 23, 42, 0.85)",
-      "--text": "#e2e8f0",
-      "--text-muted": "#94a3b8",
-      "--accent": "#38bdf8",
-      "--accent-soft": "rgba(56, 189, 248, 0.2)",
-      "--positive": "#4ade80",
-      "--negative": "#f87171",
-      "--shadow-lg": "0 40px 60px rgba(2, 6, 23, 0.6)",
-      "--card-highlight": "rgba(30, 41, 59, 0.82)",
-      "--card-border": "rgba(56, 189, 248, 0.18)",
-      "--card-warning": "rgba(127, 29, 29, 0.55)",
-      "--card-warning-border": "rgba(248, 113, 113, 0.35)",
-      "--warning-text": "#fecaca",
-    },
-  },
-  peach: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#fff7ed",
-      "--bg-gradient": "radial-gradient(circle at top, #fff1e6 0%, #ffe4d6 55%, #ffe3e3 100%)",
-      "--header-gradient": "linear-gradient(140deg, #ffe1d6 0%, #ffd8e8 100%)",
-      "--bg-card": "rgba(255, 255, 255, 0.92)",
-      "--bg-accent": "linear-gradient(135deg, #fb7185, #f97316)",
-      "--form-bg": "rgba(255, 255, 255, 0.82)",
-      "--text": "#582c2c",
-      "--text-muted": "#8f4f4f",
-      "--accent": "#f97316",
-      "--accent-soft": "rgba(249, 115, 22, 0.12)",
-      "--positive": "#22c55e",
-      "--negative": "#ef4444",
-      "--shadow-lg": "0 40px 60px rgba(255, 126, 95, 0.22)",
-      "--card-highlight": "rgba(255, 247, 237, 0.92)",
-      "--card-border": "rgba(245, 158, 11, 0.22)",
-      "--card-warning": "rgba(255, 228, 230, 0.95)",
-      "--card-warning-border": "rgba(244, 114, 182, 0.28)",
-      "--warning-text": "#c2410c",
-    },
-  },
-  tan: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#f5f1e6",
-      "--bg-gradient": "radial-gradient(circle at top left, #f7ede2 0%, #f4e6d8 60%, #efe2d1 100%)",
-      "--header-gradient": "linear-gradient(140deg, #f0e0d0 0%, #f6ead8 100%)",
-      "--bg-card": "rgba(255, 253, 248, 0.94)",
-      "--bg-accent": "linear-gradient(135deg, #d97706, #b45309)",
-      "--form-bg": "rgba(255, 253, 248, 0.85)",
-      "--text": "#3f2f22",
-      "--text-muted": "#6b4f3a",
-      "--accent": "#b45309",
-      "--accent-soft": "rgba(212, 163, 115, 0.18)",
-      "--positive": "#22c55e",
-      "--negative": "#dc2626",
-      "--shadow-lg": "0 40px 60px rgba(107, 83, 53, 0.22)",
-      "--card-highlight": "rgba(250, 245, 237, 0.95)",
-      "--card-border": "rgba(214, 162, 104, 0.26)",
-      "--card-warning": "rgba(254, 226, 200, 0.92)",
-      "--card-warning-border": "rgba(250, 204, 21, 0.28)",
-      "--warning-text": "#92400e",
-    },
-  },
-};
-
-const SEASONAL_THEMES = {
-  spring: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#f6fffa",
-      "--bg-gradient": "radial-gradient(circle at top, #f0fff4 0%, #dcfce7 50%, #ecfdf5 100%)",
-      "--header-gradient": "linear-gradient(140deg, #dcfce7 0%, #e0f2fe 100%)",
-      "--bg-card": "rgba(255, 255, 255, 0.9)",
-      "--bg-accent": "linear-gradient(135deg, #34d399, #22d3ee)",
-      "--form-bg": "rgba(255, 255, 255, 0.82)",
-      "--text": "#065f46",
-      "--text-muted": "#0f766e",
-      "--accent": "#22d3ee",
-      "--accent-soft": "rgba(34, 211, 238, 0.16)",
-      "--positive": "#16a34a",
-      "--negative": "#f87171",
-      "--shadow-lg": "0 40px 60px rgba(45, 212, 191, 0.22)",
-      "--card-highlight": "rgba(236, 254, 255, 0.92)",
-      "--card-border": "rgba(45, 212, 191, 0.24)",
-      "--card-warning": "rgba(254, 226, 226, 0.9)",
-      "--card-warning-border": "rgba(248, 113, 113, 0.25)",
-      "--warning-text": "#be123c",
-    },
-  },
-  summer: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#e0fbfc",
-      "--bg-gradient": "radial-gradient(circle at top, #ccfbf1 0%, #99f6e4 50%, #bfdbfe 100%)",
-      "--header-gradient": "linear-gradient(140deg, #bae6fd 0%, #99f6e4 100%)",
-      "--bg-card": "rgba(255, 255, 255, 0.9)",
-      "--bg-accent": "linear-gradient(135deg, #0ea5e9, #22d3ee)",
-      "--form-bg": "rgba(255, 255, 255, 0.85)",
-      "--text": "#0f172a",
-      "--text-muted": "#0e7490",
-      "--accent": "#0ea5e9",
-      "--accent-soft": "rgba(14, 165, 233, 0.18)",
-      "--positive": "#22c55e",
-      "--negative": "#ef4444",
-      "--shadow-lg": "0 40px 60px rgba(14, 165, 233, 0.22)",
-      "--card-highlight": "rgba(219, 234, 254, 0.94)",
-      "--card-border": "rgba(96, 165, 250, 0.24)",
-      "--card-warning": "rgba(254, 226, 226, 0.92)",
-      "--card-warning-border": "rgba(248, 113, 113, 0.24)",
-      "--warning-text": "#be123c",
-    },
-  },
-  fall: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#fff4e6",
-      "--bg-gradient": "radial-gradient(circle at top, #ffe8d6 0%, #ffd7ba 50%, #fec89a 100%)",
-      "--header-gradient": "linear-gradient(140deg, #fed7aa 0%, #f97316 100%)",
-      "--bg-card": "rgba(255, 255, 255, 0.9)",
-      "--bg-accent": "linear-gradient(135deg, #f97316, #ea580c)",
-      "--form-bg": "rgba(255, 255, 255, 0.85)",
-      "--text": "#7c2d12",
-      "--text-muted": "#9a3412",
-      "--accent": "#ea580c",
-      "--accent-soft": "rgba(234, 88, 12, 0.18)",
-      "--positive": "#22c55e",
-      "--negative": "#dc2626",
-      "--shadow-lg": "0 40px 60px rgba(234, 88, 12, 0.2)",
-      "--card-highlight": "rgba(255, 247, 237, 0.9)",
-      "--card-border": "rgba(250, 204, 21, 0.3)",
-      "--card-warning": "rgba(254, 205, 211, 0.92)",
-      "--card-warning-border": "rgba(244, 114, 182, 0.3)",
-      "--warning-text": "#9a3412",
-    },
-  },
-  winter: {
-    colorScheme: "light",
-    vars: {
-      "--bg": "#eef5ff",
-      "--bg-gradient": "radial-gradient(circle at top, #e0f2fe 0%, #dbeafe 50%, #f1f5f9 100%)",
-      "--header-gradient": "linear-gradient(140deg, #c7d2fe 0%, #e0f2fe 100%)",
-      "--bg-card": "rgba(255, 255, 255, 0.9)",
-      "--bg-accent": "linear-gradient(135deg, #6366f1, #0ea5e9)",
-      "--form-bg": "rgba(255, 255, 255, 0.85)",
-      "--text": "#1e293b",
-      "--text-muted": "#475569",
-      "--accent": "#6366f1",
-      "--accent-soft": "rgba(99, 102, 241, 0.16)",
-      "--positive": "#22c55e",
-      "--negative": "#ef4444",
-      "--shadow-lg": "0 40px 60px rgba(99, 102, 241, 0.2)",
-      "--card-highlight": "rgba(236, 254, 255, 0.92)",
-      "--card-border": "rgba(148, 163, 184, 0.24)",
-      "--card-warning": "rgba(254, 226, 226, 0.9)",
-      "--card-warning-border": "rgba(248, 113, 113, 0.25)",
-      "--warning-text": "#be123c",
-    },
-  },
-};
-
-function detectSeason() {
-  const month = new Date().getMonth(); // 0-11
-  if (month >= 2 && month <= 4) return { key: "spring", label: "Spring" };
-  if (month >= 5 && month <= 7) return { key: "summer", label: "Summer" };
-  if (month >= 8 && month <= 10) return { key: "fall", label: "Fall" };
-  return { key: "winter", label: "Winter" };
-}
-
-function getSeasonalThemeDefinition() {
-  const season = detectSeason();
-  return {
-    theme: SEASONAL_THEMES[season.key] || THEMES.light,
-    label: season.label,
-  };
-}
-
-let currentTheme = "seasonal";
-
-function captureDomRefs() {
-  settingsBtn = document.getElementById("open-settings");
-  settingsPanel = document.getElementById("settings-panel");
-  settingsBackdrop = document.getElementById("settings-backdrop");
-  closeSettingsButton = document.getElementById("close-settings");
-  settingsForm = document.getElementById("settings-form");
-  themeRadios = settingsForm
-    ? Array.from(settingsForm.querySelectorAll('input[name="theme"]'))
-    : [];
-  seasonNote = document.getElementById("season-note");
-  seasonLabel = document.getElementById("season-label");
-  featureBody = document.getElementById("feature-body");
-  worstBody = document.getElementById("worst-body");
-  watchlistContainer = document.getElementById("watchlist-container");
-  topTenContainer = document.getElementById("top-ten");
-  bottomTenContainer = document.getElementById("bottom-ten");
-  resultsContainer = document.getElementById("results-container");
-  quoteTemplate = document.getElementById("quote-card-template");
-  searchForm = document.getElementById("search-form");
-  searchInput = document.getElementById("search-input");
-}
-
-function readStoredTheme() {
-  if (typeof localStorage === "undefined") return null;
-  try {
-    return localStorage.getItem(THEME_STORAGE_KEY);
-  } catch (error) {
-    console.warn("Unable to read stored theme:", error);
-    return null;
-  }
-}
-
-function applyTheme(themeName, { persist = true } = {}) {
-  currentTheme = themeName;
-  let themeDefinition = THEMES.light;
-  let seasonalLabel = null;
-
-  if (themeName === "seasonal") {
-    const seasonal = getSeasonalThemeDefinition();
-    themeDefinition = seasonal.theme;
-    seasonalLabel = seasonal.label;
-  } else if (THEMES[themeName]) {
-    themeDefinition = THEMES[themeName];
-  } else {
-    currentTheme = "light";
-    themeDefinition = THEMES.light;
-  }
-
-  Object.entries(themeDefinition.vars).forEach(([varName, value]) => {
-    document.documentElement.style.setProperty(varName, value);
-  });
-
-  const scheme = themeDefinition.colorScheme || "light";
-  document.documentElement.style.setProperty("--color-scheme", scheme);
-  document.documentElement.style.setProperty("color-scheme", scheme);
-
-  if (persist) {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
-    } catch (error) {
-      console.warn("Unable to persist theme preference:", error);
-    }
-  }
-
-  updateThemeRadios(currentTheme);
-  updateSeasonNote(currentTheme, seasonalLabel);
-}
-
-function updateThemeRadios(themeName) {
-  if (!themeRadios.length) return;
-  themeRadios.forEach((radio) => {
-    radio.checked = radio.value === themeName;
-  });
-}
-
-function updateSeasonNote(themeName, label) {
-  if (!seasonNote || !seasonLabel) return;
-  if (themeName === "seasonal") {
-    seasonNote.classList.add("visible");
-    seasonLabel.textContent = label || detectSeason().label;
-  } else {
-    seasonNote.classList.remove("visible");
-    seasonLabel.textContent = "—";
-  }
-}
-
-function openSettingsPanel() {
-  if (!settingsPanel) return;
-  settingsPanel.classList.add("visible");
-  settingsBackdrop?.classList.add("visible");
-  document.body.classList.add("settings-open");
-  settingsPanel.setAttribute("aria-hidden", "false");
-  const checked =
-    settingsForm?.querySelector('input[name="theme"]:checked') ?? themeRadios[0];
-  if (checked) {
-    checked.focus({ preventScroll: true });
-  }
-}
-
-function closeSettingsPanel() {
-  if (!settingsPanel) return;
-  settingsPanel.classList.remove("visible");
-  settingsBackdrop?.classList.remove("visible");
-  document.body.classList.remove("settings-open");
-  settingsPanel.setAttribute("aria-hidden", "true");
-  settingsBtn?.focus({ preventScroll: true });
-}
-
-function initThemeControls() {
-  const storedTheme = readStoredTheme() || "seasonal";
-  applyTheme(storedTheme, { persist: false });
-
-  if (!settingsForm || !settingsPanel || !settingsBtn) {
-    return;
-  }
-
-  settingsBtn.addEventListener("click", openSettingsPanel);
-  closeSettingsButton?.addEventListener("click", closeSettingsPanel);
-  settingsBackdrop?.addEventListener("click", closeSettingsPanel);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && settingsPanel?.classList.contains("visible")) {
-      closeSettingsPanel();
-    }
-  });
-
-  settingsForm?.addEventListener("change", (event) => {
-    const target = event.target;
-    if (target instanceof HTMLInputElement && target.name === "theme") {
-      applyTheme(target.value);
-    }
-  });
-}
-
-const fallbackQuotes = {
+const FALLBACK_QUOTES = {
   NVDA: {
     longName: "NVIDIA Corporation",
     regularMarketPrice: 124.52,
@@ -458,19 +96,6 @@ const fallbackQuotes = {
     marketCap: 1870000000000,
     exchangeSuffix: "NASDAQ",
   },
-  "0700.HK": {
-    longName: "Tencent Holdings Limited",
-    regularMarketPrice: 312.4,
-    regularMarketChange: 4.2,
-    regularMarketChangePercent: 1.36,
-    regularMarketDayLow: 307.6,
-    regularMarketDayHigh: 315.2,
-    fiftyTwoWeekLow: 252.8,
-    fiftyTwoWeekHigh: 384.2,
-    regularMarketVolume: 14560000,
-    marketCap: 3020000000000,
-    exchangeSuffix: "HKG",
-  },
   META: {
     longName: "Meta Platforms, Inc.",
     regularMarketPrice: 514.32,
@@ -496,6 +121,32 @@ const fallbackQuotes = {
     regularMarketVolume: 5380000,
     marketCap: 280000000000,
     exchangeSuffix: "NASDAQ",
+  },
+  TXN: {
+    longName: "Texas Instruments Incorporated",
+    regularMarketPrice: 194.78,
+    regularMarketChange: 1.28,
+    regularMarketChangePercent: 0.66,
+    regularMarketDayLow: 191.2,
+    regularMarketDayHigh: 195.6,
+    fiftyTwoWeekLow: 139.5,
+    fiftyTwoWeekHigh: 206.0,
+    regularMarketVolume: 4780000,
+    marketCap: 177000000000,
+    exchangeSuffix: "NASDAQ",
+  },
+  "0700.HK": {
+    longName: "Tencent Holdings Limited",
+    regularMarketPrice: 312.4,
+    regularMarketChange: 4.2,
+    regularMarketChangePercent: 1.36,
+    regularMarketDayLow: 307.6,
+    regularMarketDayHigh: 315.2,
+    fiftyTwoWeekLow: 252.8,
+    fiftyTwoWeekHigh: 384.2,
+    regularMarketVolume: 14560000,
+    marketCap: 3020000000000,
+    exchangeSuffix: "HKG",
   },
   "9988.HK": {
     longName: "Alibaba Group Holding Limited",
@@ -538,358 +189,229 @@ const fallbackQuotes = {
   },
 };
 
-function initSearchHandlers() {
-  if (!searchForm || !searchInput || !resultsContainer) return;
-  if (searchForm.dataset.bound === "true") return;
-  searchForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const symbol = searchInput.value.trim().toUpperCase();
-    if (!symbol) return;
-    renderLoading(resultsContainer);
-    const data = await fetchQuoteWithMarkets(symbol);
-    if (!data) {
-      resultsContainer.innerHTML = `
-        <div class="message error">
-          <strong>Quote unavailable.</strong>
-          <span>We could not find data for <code>${symbol.toUpperCase()}</code>. Try including an exchange suffix like <code>.HK</code> for Hong Kong.</span>
-        </div>`;
-      return;
-    }
-    renderQuotes([data], resultsContainer, { allowGoogle: true, replace: true });
-  });
-  searchForm.dataset.bound = "true";
-}
+const MARKET_SUFFIXES = [
+  "",
+  ".HK",
+  ".SZ",
+  ".SS",
+  ".L",
+  ".TO",
+  ".AX",
+  ".T",
+  ".PA",
+  ".F",
+];
 
-async function initialize() {
-  if (
-    !featureBody ||
-    !worstBody ||
-    !watchlistContainer ||
-    !topTenContainer ||
-    !bottomTenContainer
-  ) {
-    console.warn("Required dashboard elements are missing; aborting init.");
-    return;
-  }
+const SEASONS = {
+  spring: { className: "theme-season-spring", label: "Spring" },
+  summer: { className: "theme-season-summer", label: "Summer" },
+  fall: { className: "theme-season-fall", label: "Fall" },
+  winter: { className: "theme-season-winter", label: "Winter" },
+};
 
+const THEMES = {
+  light: { className: "theme-light" },
+  dark: { className: "theme-dark" },
+  peach: { className: "theme-peach" },
+  tan: { className: "theme-tan" },
+};
+
+const DEFAULT_SETTINGS = {
+  theme: "seasonal",
+  refreshMinutes: 60,
+  rankingMode: "daily",
+  showWatchlist: true,
+  highlightFuture: true,
+  openLinksInNewTab: true,
+};
+
+const SETTINGS_STORAGE_KEY = "stocks-dashboard-settings";
+
+let settingsState = loadSettings();
+let refreshTimer = null;
+
+function loadSettings() {
+  if (typeof localStorage === "undefined") return { ...DEFAULT_SETTINGS };
   try {
-  featureBody.innerHTML = "<p>Refreshing featured metrics…</p>";
-  worstBody.innerHTML = "<p>Scanning for biggest pullbacks…</p>";
-  renderLoading(watchlistContainer);
-  const tickers = [featuredTicker, ...trendingTickers];
-  const quotes = await fetchQuoteList(tickers);
-
-  const bestTen = selectTop(quotes, 10, "desc");
-  const worstTen = selectTop(quotes, 10, "asc");
-  const featureCandidate =
-    (bestTen.length ? bestTen[0] : undefined) ??
-    quotes.find((quote) => quote.symbol === featuredTicker) ??
-    patchFallback(featuredTicker);
-  renderFeatured(featureCandidate, featureCandidate?.symbol ?? featuredTicker);
-
-  if (worstTen.length) {
-    renderWorstHeadline(worstTen[0]);
-  } else {
-    renderWorstHeadline(patchFallback("TSLA"));
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return { ...DEFAULT_SETTINGS };
+    const parsed = JSON.parse(raw);
+    const merged = { ...DEFAULT_SETTINGS, ...parsed };
+    if (!Object.prototype.hasOwnProperty.call(THEMES, merged.theme) && merged.theme !== "seasonal") {
+      merged.theme = DEFAULT_SETTINGS.theme;
+    }
+    if (typeof merged.refreshMinutes !== "number" || !Number.isFinite(merged.refreshMinutes) || merged.refreshMinutes <= 0) {
+      merged.refreshMinutes = DEFAULT_SETTINGS.refreshMinutes;
+    }
+    if (!["daily", "momentum"].includes(merged.rankingMode)) {
+      merged.rankingMode = DEFAULT_SETTINGS.rankingMode;
+    }
+    merged.showWatchlist = Boolean(merged.showWatchlist);
+    merged.highlightFuture = Boolean(merged.highlightFuture);
+    merged.openLinksInNewTab = merged.openLinksInNewTab !== false;
+    return merged;
+  } catch {
+    return { ...DEFAULT_SETTINGS };
   }
+}
 
-  const watchlistQuotes = quotes.filter(
-    (quote) => quote.symbol !== (featureCandidate?.symbol ?? featuredTicker)
+function saveSettings() {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsState));
+  } catch {
+    /* ignore storage errors */
+  }
+}
+
+function detectSeason() {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return SEASONS.spring;
+  if (month >= 5 && month <= 7) return SEASONS.summer;
+  if (month >= 8 && month <= 10) return SEASONS.fall;
+  return SEASONS.winter;
+}
+
+function applyTheme(theme) {
+  const body = document.body;
+  body.classList.remove(
+    "theme-light",
+    "theme-dark",
+    "theme-peach",
+    "theme-tan",
+    "theme-season-spring",
+    "theme-season-summer",
+    "theme-season-fall",
+    "theme-season-winter"
   );
-  if (bestTen.length) {
-    renderLeaders(bestTen, topTenContainer, "best");
-  } else {
-    topTenContainer.innerHTML = `<p class="placeholder">Unable to load leaders.</p>`;
+
+  let appliedClass = "theme-light";
+  let seasonLabel = null;
+
+  if (theme === "seasonal") {
+    const season = detectSeason();
+    appliedClass = season.className;
+    seasonLabel = season.label;
+  } else if (THEMES[theme]) {
+    appliedClass = THEMES[theme].className;
   }
-  if (worstTen.length) {
-    renderLeaders(worstTen, bottomTenContainer, "worst");
-  } else {
-    bottomTenContainer.innerHTML = `<p class="placeholder">Unable to load laggards.</p>`;
+
+  body.classList.add(appliedClass);
+  const seasonNote = document.querySelector(".season-note");
+  const seasonLabelEl = document.getElementById("season-label");
+  if (seasonNote && seasonLabelEl) {
+    if (theme === "seasonal") {
+      seasonNote.classList.add("visible");
+      seasonLabelEl.textContent = seasonLabel ?? detectSeason().label;
+    } else {
+      seasonNote.classList.remove("visible");
+      seasonLabelEl.textContent = "—";
+    }
   }
-  if (watchlistQuotes.length) {
-    renderQuotes(watchlistQuotes, watchlistContainer, { allowGoogle: true });
-  } else {
-    renderQuotes(
-      trendingTickers
-        .filter((ticker) => ticker !== featuredTicker)
-        .map((ticker) => patchFallback(ticker)),
-      watchlistContainer,
-      { allowGoogle: true }
-    );
-  }
-  } catch (error) {
-    console.error("Initialization error:", error);
-    featureBody.innerHTML =
-      "<p>Unable to load data right now. Try refreshing in a moment.</p>";
-    worstBody.innerHTML =
-      "<p>Unable to calculate biggest risk while offline.</p>";
-    topTenContainer.innerHTML =
-      '<p class="placeholder">Top movers unavailable.</p>';
-    bottomTenContainer.innerHTML =
-      '<p class="placeholder">Underperformers unavailable.</p>';
-  }
+
 }
 
-function bootstrapDashboard() {
-  captureDomRefs();
-  initThemeControls();
-  initSearchHandlers();
-  initialize();
-}
-
-if (document.readyState === "loading") {
-  window.addEventListener("DOMContentLoaded", bootstrapDashboard);
-} else {
-  bootstrapDashboard();
-}
-
-async function fetchQuoteList(symbols) {
+async function fetchQuotes(symbols) {
   const query = symbols.join(",");
   const url = `${API_ENDPOINT}?symbols=${encodeURIComponent(query)}`;
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw new Error("Network error");
     const payload = await response.json();
-    if (!payload?.quoteResponse?.result?.length) return [];
-    return payload.quoteResponse.result.map(standardizeQuote);
+    return payload?.quoteResponse?.result ?? [];
   } catch (error) {
     console.warn("Falling back to cached data:", error);
-    return symbols.map((ticker) => patchFallback(ticker)).filter(Boolean);
+    return symbols.map((ticker) => ({ symbol: ticker, ...FALLBACK_QUOTES[ticker] })).filter(
+      (q) => q.marketCap
+    );
   }
 }
 
-async function fetchQuote(symbol) {
-  const [quote] = await fetchQuoteList([symbol]);
-  return quote;
+function scheduleRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(initDashboard, settingsState.refreshMinutes * 60 * 1000);
 }
 
-async function fetchQuoteWithMarkets(inputSymbol) {
-  const candidates = buildSymbolCandidates(inputSymbol);
-  const uniqueCandidates = Array.from(new Set(candidates));
-  const quotes = await fetchQuoteList(uniqueCandidates);
-  if (!quotes.length) {
-    return null;
+function applySettings() {
+  applyTheme(settingsState.theme);
+  document.body.classList.toggle("hide-watchlist", !settingsState.showWatchlist);
+  document.body.classList.toggle("highlight-future", settingsState.highlightFuture);
+  scheduleRefresh();
+  saveSettings();
+}
+
+function openFinanceLink(quote) {
+  const suffix = quote.exchangeSuffix || "NASDAQ";
+  const url = `https://www.google.com/finance/quote/${encodeURIComponent(quote.symbol)}:${suffix}`;
+  const target = settingsState.openLinksInNewTab ? "_blank" : "_self";
+  const features = target === "_blank" ? "noopener" : undefined;
+  window.open(url, target, features);
+}
+
+function getRankingScore(quote) {
+  const pct = quote?.regularMarketChangePercent ?? 0;
+  if (settingsState.rankingMode === "momentum") {
+    const volumeFactor = quote?.regularMarketVolume ? Math.log10(quote.regularMarketVolume) / 10 : 0;
+    const capFactor = quote?.marketCap ? Math.log10(quote.marketCap) / 14 : 0;
+    return pct * (1 + volumeFactor + capFactor * 0.2);
   }
-  const normalized = inputSymbol.toUpperCase();
-  const best =
-    quotes.find((q) => q.symbol === normalized) ||
-    quotes.find((q) => q.symbol.startsWith(normalized)) ||
-    quotes[0];
-  return best;
+  return pct;
 }
 
-function buildSymbolCandidates(raw) {
-  const clean = raw.trim().toUpperCase();
-  if (!clean) return [];
-  if (clean.includes(".")) return [clean];
-  return MARKET_SUFFIXES.map((suffix) => `${clean}${suffix}`);
+function getOutlook(quote) {
+  const score = getRankingScore(quote);
+  if (!Number.isFinite(score)) return { label: "Neutral", className: "ai-neutral" };
+  if (score >= 8) return { label: "Strongly Bullish", className: "ai-strong-bull" };
+  if (score >= 3) return { label: "Bullish", className: "ai-bull" };
+  if (score <= -8) return { label: "Strongly Bearish", className: "ai-strong-bear" };
+  if (score <= -3) return { label: "Bearish", className: "ai-bear" };
+  return { label: "Neutral", className: "ai-neutral" };
 }
 
-function standardizeQuote(raw) {
+function normalizeQuote(raw) {
+  if (!raw) return null;
+  const fallback = FALLBACK_QUOTES[raw.symbol];
+  const base = fallback ? { ...fallback, ...raw } : raw;
+  const exchangeSuffix =
+    base.exchangeSuffix ||
+    inferExchangeSuffix(base.fullExchangeName || base.exchange || "");
   return {
-    symbol: raw.symbol,
-    longName: raw.longName || raw.shortName || raw.symbol,
-    regularMarketPrice: raw.regularMarketPrice,
-    regularMarketChange: raw.regularMarketChange,
-    regularMarketChangePercent: raw.regularMarketChangePercent,
-    regularMarketDayLow: raw.regularMarketDayLow,
-    regularMarketDayHigh: raw.regularMarketDayHigh,
-    fiftyTwoWeekLow: raw.fiftyTwoWeekLow,
-    fiftyTwoWeekHigh: raw.fiftyTwoWeekHigh,
-    regularMarketVolume: raw.regularMarketVolume,
-    marketCap: raw.marketCap,
-    exchangeSuffix: inferGoogleSuffix(raw),
+    symbol: base.symbol,
+    longName: base.longName || base.shortName || base.symbol,
+    regularMarketPrice: base.regularMarketPrice,
+    regularMarketChange: base.regularMarketChange,
+    regularMarketChangePercent: base.regularMarketChangePercent,
+    regularMarketDayLow: base.regularMarketDayLow,
+    regularMarketDayHigh: base.regularMarketDayHigh,
+    fiftyTwoWeekLow: base.fiftyTwoWeekLow,
+    fiftyTwoWeekHigh: base.fiftyTwoWeekHigh,
+    regularMarketVolume: base.regularMarketVolume,
+    marketCap: base.marketCap,
+    exchangeSuffix,
   };
 }
 
-function patchFallback(symbol) {
-  const fallback = fallbackQuotes[symbol];
-  if (!fallback) return null;
-  return { symbol, ...fallback };
-}
-
-function renderFeatured(quote, symbolOverride) {
-  if (!quote) {
-    featureBody.innerHTML =
-      "<p>Unable to load featured stock. Try refreshing in a few moments.</p>";
-    return;
+function inferExchangeSuffix(exchange) {
+  const mapping = [
+    { suffix: "NASDAQ", tokens: ["NASDAQ", "NMS", "NGM"] },
+    { suffix: "NYSE", tokens: ["NYSE", "NYQ"] },
+    { suffix: "NYSEARCA", tokens: ["ARCA", "ARCX"] },
+    { suffix: "NYSEAMERICAN", tokens: ["AMEX", "NYSE AMERICAN"] },
+    { suffix: "HKG", tokens: ["HONG KONG", "HKEX", "HKSE"] },
+    { suffix: "SHA", tokens: ["SHANGHAI", "SHSE", "SS"] },
+    { suffix: "SHE", tokens: ["SHENZHEN", "SZSE", "SZ"] },
+    { suffix: "LON", tokens: ["LONDON", "LSE"] },
+    { suffix: "TSX", tokens: ["TORONTO", "TSX"] },
+  ];
+  const upper = exchange.toUpperCase();
+  for (const entry of mapping) {
+    if (entry.tokens.some((token) => upper.includes(token))) return entry.suffix;
   }
-  const symbol = quote.symbol || symbolOverride || featuredTicker;
-  featureBody.innerHTML = `
-    <span class="headline">${symbol} · ${quote.longName ?? ""}</span>
-    <span class="subline">Largest daily % gain among large caps (>$5B market cap)</span>
-    <div class="price-stack">
-      <span class="current-price">${formatCurrency(
-        quote.regularMarketPrice
-      )}</span>
-      <span class="change-badge ${getChangeClass(
-        quote.regularMarketChange
-      )}">${formatChange(quote)}</span>
-    </div>
-    <div class="metrics">
-      <span>
-        <strong>Day Range</strong>
-        ${formatRange(quote.regularMarketDayLow, quote.regularMarketDayHigh)}
-      </span>
-      <span>
-        <strong>52 Week</strong>
-        ${formatRange(quote.fiftyTwoWeekLow, quote.fiftyTwoWeekHigh)}
-      </span>
-      <span>
-        <strong>Volume</strong>
-        ${formatNumber(quote.regularMarketVolume)}
-      </span>
-      <span>
-        <strong>Market Cap</strong>
-        ${formatMarketCap(quote.marketCap)}
-      </span>
-    </div>
-  `;
-}
-
-function renderWorstHeadline(quote) {
-  if (!quote) {
-    worstBody.innerHTML =
-      "<p>Unable to identify a biggest risk today. Try again later.</p>";
-    return;
-  }
-  worstBody.innerHTML = `
-    <span class="headline">${quote.symbol} · ${quote.longName ?? ""}</span>
-    <span class="subline">Largest daily % drop among large caps (>$5B market cap)</span>
-    <div class="price-stack">
-      <span class="current-price">${formatCurrency(
-        quote.regularMarketPrice
-      )}</span>
-      <span class="change-badge ${getChangeClass(
-        quote.regularMarketChange
-      )}">${formatChange(quote)}</span>
-    </div>
-    <div class="metrics">
-      <span>
-        <strong>Day Range</strong>
-        ${formatRange(quote.regularMarketDayLow, quote.regularMarketDayHigh)}
-      </span>
-      <span>
-        <strong>52 Week</strong>
-        ${formatRange(quote.fiftyTwoWeekLow, quote.fiftyTwoWeekHigh)}
-      </span>
-      <span>
-        <strong>Volume</strong>
-        ${formatNumber(quote.regularMarketVolume)}
-      </span>
-      <span>
-        <strong>Market Cap</strong>
-        ${formatMarketCap(quote.marketCap)}
-      </span>
-    </div>
-  `;
-}
-
-function renderQuotes(quotes, container, { allowGoogle = false, replace = false } = {}) {
-  if (!container || !quoteTemplate) return;
-  if (replace) container.innerHTML = "";
-  quotes.forEach((quote) => {
-    if (!quote) return;
-    const card = quoteTemplate.content.firstElementChild.cloneNode(true);
-    card.querySelector(".symbol").textContent = quote.symbol;
-    card.querySelector(".name").textContent = quote.longName ?? "";
-    card.querySelector(".price").textContent = formatCurrency(
-      quote.regularMarketPrice
-    );
-    const changeEl = card.querySelector(".change");
-    changeEl.textContent = formatChange(quote);
-    changeEl.classList.add(getChangeClass(quote.regularMarketChange));
-    card.querySelector(".day-range").textContent = formatRange(
-      quote.regularMarketDayLow,
-      quote.regularMarketDayHigh
-    );
-    card.querySelector(".year-range").textContent = formatRange(
-      quote.fiftyTwoWeekLow,
-      quote.fiftyTwoWeekHigh
-    );
-    card.querySelector(".volume").textContent = formatNumber(
-      quote.regularMarketVolume
-    );
-    card.querySelector(".market-cap").textContent = formatMarketCap(
-      quote.marketCap
-    );
-    const googleBtn = card.querySelector(".quick-google");
-    if (allowGoogle) {
-      googleBtn.addEventListener("click", () => {
-        const suffix = quote.exchangeSuffix || "NASDAQ";
-        const url = `https://www.google.com/finance/quote/${encodeURIComponent(
-          quote.symbol
-        )}:${suffix}`;
-        window.open(url, "_blank", "noopener");
-      });
-    } else {
-      googleBtn.remove();
-    }
-    container.appendChild(card);
-  });
-}
-
-function renderLoading(container) {
-  if (!container) return;
-  container.innerHTML = `<p class="placeholder">Loading latest data…</p>`;
-}
-
-function selectTop(quotes, size, direction = "desc") {
-  return quotes
-    .filter(
-      (q) =>
-        typeof q?.regularMarketChangePercent === "number" &&
-        !Number.isNaN(q.regularMarketChangePercent) &&
-        typeof q?.marketCap === "number" &&
-        q.marketCap >= LARGE_CAP_THRESHOLD
-    )
-    .sort((a, b) =>
-      direction === "desc"
-        ? b.regularMarketChangePercent - a.regularMarketChangePercent
-        : a.regularMarketChangePercent - b.regularMarketChangePercent
-    )
-    .slice(0, size);
-}
-
-function renderLeaders(list, container, type) {
-  if (!container) return;
-  if (!list.length) {
-    container.innerHTML = `<p class="placeholder">No data available.</p>`;
-    return;
-  }
-  container.innerHTML = "";
-  list.slice(0, 10).forEach((quote) => {
-    const card = document.createElement("article");
-    card.className = `leaders-card ${type === "worst" ? "worst" : ""}`;
-    card.innerHTML = `
-      <div class="row-top">
-        <span class="symbol">${quote.symbol}</span>
-        <span class="change ${getChangeClass(
-          quote.regularMarketChange
-        )}">${formatChange(quote)}</span>
-      </div>
-      <span class="name">${quote.longName ?? ""}</span>
-      <div class="details">
-        <span>${formatCurrency(quote.regularMarketPrice)}</span>
-        <span>${formatMarketCap(quote.marketCap)}</span>
-      </div>
-      <button type="button">Open in Google Finance</button>
-    `;
-    const btn = card.querySelector("button");
-    btn.addEventListener("click", () => {
-      const suffix = quote.exchangeSuffix || "NASDAQ";
-      const url = `https://www.google.com/finance/quote/${encodeURIComponent(
-        quote.symbol
-      )}:${suffix}`;
-      window.open(url, "_blank", "noopener");
-    });
-    container.appendChild(card);
-  });
+  return "NASDAQ";
 }
 
 function formatCurrency(value) {
-  if (typeof value !== "number") return "—";
-  return `$${value.toFixed(2)}`;
+  return typeof value === "number" ? `$${value.toFixed(2)}` : "—";
 }
 
 function formatChange(quote) {
@@ -914,7 +436,7 @@ function formatNumber(value) {
 }
 
 function formatMarketCap(value) {
-  if (!value) return "—";
+  if (typeof value !== "number") return "—";
   const units = [
     { limit: 1e12, suffix: "T" },
     { limit: 1e9, suffix: "B" },
@@ -928,41 +450,359 @@ function formatMarketCap(value) {
   return formatNumber(value);
 }
 
-function getChangeClass(change) {
-  if (typeof change !== "number") return "";
-  return change >= 0 ? "positive" : "negative";
+function selectLeaders(quotes, direction = "desc", limit = 10) {
+  return quotes
+    .filter(
+      (quote) =>
+        typeof quote.regularMarketChangePercent === "number" &&
+        quote.marketCap >= LARGE_CAP_THRESHOLD
+    )
+    .sort((a, b) =>
+      direction === "desc"
+        ? getRankingScore(b) - getRankingScore(a)
+        : getRankingScore(a) - getRankingScore(b)
+    )
+    .slice(0, limit);
 }
 
-function inferGoogleSuffix(raw) {
-  const exchange = (raw.fullExchangeName || raw.exchange || "").toUpperCase();
-  const map = [
-    { suffix: "NASDAQ", patterns: ["NASDAQ", "NMS", "NGM"] },
-    { suffix: "NYSE", patterns: ["NYSE", "NYQ"] },
-    { suffix: "NYSEARCA", patterns: ["ARCX", "ARCA"] },
-    { suffix: "NYSEAMERICAN", patterns: ["AMEX", "NYSE AMERICAN"] },
-    { suffix: "TSE", patterns: ["TORONTO", "TSX"] },
-    { suffix: "LON", patterns: ["LONDON", "LSE"] },
-    { suffix: "HKG", patterns: ["HKSE", "HKEX", "HONG KONG"] },
-    { suffix: "SHA", patterns: ["SHANGHAI", "SHSE", "SS"] },
-    { suffix: "SHE", patterns: ["SHENZHEN", "SZSE", "SZ"] },
-  ];
-  for (const entry of map) {
-    if (entry.patterns.some((pattern) => exchange.includes(pattern))) {
-      return entry.suffix;
-    }
+function renderHeadline(cardEl, quote, subline) {
+  if (!cardEl) return;
+  if (!quote) {
+    cardEl.innerHTML = "<p>Data unavailable. Try refreshing shortly.</p>";
+    return;
   }
-  return "NASDAQ";
+  const outlook = settingsState.highlightFuture ? getOutlook(quote) : null;
+  const aiTag = outlook
+    ? `<span class="ai-tag ${outlook.className}">AI Outlook: ${outlook.label}</span>`
+    : "";
+  cardEl.innerHTML = `
+    <span class="headline">${quote.symbol} · ${quote.longName ?? ""}</span>
+    <span class="subline">${subline}</span>
+    ${aiTag}
+    <div class="price-stack">
+      <span class="current-price">${formatCurrency(quote.regularMarketPrice)}</span>
+      <span class="change-badge ${quote.regularMarketChange >= 0 ? "positive" : "negative"}">
+        ${formatChange(quote)}
+      </span>
+    </div>
+    <div class="metrics">
+      <span>
+        <strong>Day Range</strong>
+        ${formatRange(quote.regularMarketDayLow, quote.regularMarketDayHigh)}
+      </span>
+      <span>
+        <strong>52 Week</strong>
+        ${formatRange(quote.fiftyTwoWeekLow, quote.fiftyTwoWeekHigh)}
+      </span>
+      <span>
+        <strong>Volume</strong>
+        ${formatNumber(quote.regularMarketVolume)}
+      </span>
+      <span>
+        <strong>Market Cap</strong>
+        ${formatMarketCap(quote.marketCap)}
+      </span>
+    </div>
+  `;
 }
-  TXN: {
-    longName: "Texas Instruments Incorporated",
-    regularMarketPrice: 194.78,
-    regularMarketChange: 1.28,
-    regularMarketChangePercent: 0.66,
-    regularMarketDayLow: 191.2,
-    regularMarketDayHigh: 195.6,
-    fiftyTwoWeekLow: 139.5,
-    fiftyTwoWeekHigh: 206.0,
-    regularMarketVolume: 4780000,
-    marketCap: 177000000000,
-    exchangeSuffix: "NASDAQ",
-  },
+
+function renderList(container, quotes, type) {
+  if (!container) return;
+  if (!quotes.length) {
+    container.innerHTML = `<p class="placeholder">No qualifying symbols.</p>`;
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  quotes.forEach((quote) => {
+    const outlook = settingsState.highlightFuture ? getOutlook(quote) : null;
+    const aiTag = outlook
+      ? `<span class="ai-tag ${outlook.className}">AI Outlook: ${outlook.label}</span>`
+      : "";
+    const card = document.createElement("article");
+    card.className = `leaders-card ${type === "worst" ? "worst" : ""}`;
+    card.innerHTML = `
+      <div class="row-top">
+        <span class="symbol">${quote.symbol}</span>
+        <span class="change ${quote.regularMarketChange >= 0 ? "positive" : "negative"}">
+          ${formatChange(quote)}
+        </span>
+      </div>
+      <span class="name">${quote.longName ?? ""}</span>
+      ${aiTag}
+      <div class="details">
+        <span>${formatCurrency(quote.regularMarketPrice)}</span>
+        <span>${formatMarketCap(quote.marketCap)}</span>
+      </div>
+      <button type="button" class="link-btn">Open in Google Finance</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => openFinanceLink(quote));
+    fragment.append(card);
+  });
+  container.innerHTML = "";
+  container.append(fragment);
+}
+
+function renderQuoteCards(container, quotes, emptyMessage = "No data available.") {
+  if (!container) return;
+  if (!quotes.length) {
+    container.innerHTML = `<p class="placeholder">${emptyMessage}</p>`;
+    return;
+  }
+  container.innerHTML = "";
+  quotes.forEach((quote) => {
+    container.append(createQuoteCard(quote));
+  });
+}
+
+function createQuoteCard(quote) {
+  const card = document.createElement("article");
+  card.className = "quote-card";
+  const changeClass = quote.regularMarketChange >= 0 ? "positive" : "negative";
+  card.innerHTML = `
+    <div class="quote-top">
+      <h3 class="symbol">${quote.symbol}</h3>
+      <span class="name">${quote.longName ?? ""}</span>
+    </div>
+    <div class="quote-middle">
+      <span class="price">${formatCurrency(quote.regularMarketPrice)}</span>
+      <span class="change ${changeClass}">${formatChange(quote)}</span>
+    </div>
+    <dl class="metrics">
+      <div>
+        <dt>Day Range</dt>
+        <dd>${formatRange(quote.regularMarketDayLow, quote.regularMarketDayHigh)}</dd>
+      </div>
+      <div>
+        <dt>52W Range</dt>
+        <dd>${formatRange(quote.fiftyTwoWeekLow, quote.fiftyTwoWeekHigh)}</dd>
+      </div>
+      <div>
+        <dt>Volume</dt>
+        <dd>${formatNumber(quote.regularMarketVolume)}</dd>
+      </div>
+      <div>
+        <dt>Market Cap</dt>
+        <dd>${formatMarketCap(quote.marketCap)}</dd>
+      </div>
+    </dl>
+    <button class="quick-google" type="button">View on Google Finance</button>
+  `;
+  card.querySelector(".quick-google").addEventListener("click", () => openFinanceLink(quote));
+  return card;
+}
+
+function renderWatchlist(container, quotes) {
+  if (!container) return;
+  if (!settingsState.showWatchlist) {
+    container.innerHTML = "";
+    return;
+  }
+  renderQuoteCards(
+    container,
+    quotes,
+    "Unable to load the watchlist at the moment."
+  );
+}
+
+async function initDashboard() {
+  const loadingCards = document.querySelectorAll(".feature-body, .leaders-list");
+  loadingCards.forEach((card) => (card.innerHTML = "<p>Loading…</p>"));
+  const watchlistEl = document.getElementById("watchlist-container");
+  if (watchlistEl) {
+    watchlistEl.innerHTML = settingsState.showWatchlist
+      ? "<p class=\"placeholder\">Loading watchlist…</p>"
+      : "";
+  }
+
+  const rawQuotes = await fetchQuotes(TRENDING_TICKERS);
+  const quotes = rawQuotes.map(normalizeQuote).filter(Boolean);
+
+  if (!quotes.length) {
+    renderHeadline(
+      document.getElementById("feature-body"),
+      null,
+      "No data available right now."
+    );
+    renderHeadline(
+      document.getElementById("worst-body"),
+      null,
+      "No data available right now."
+    );
+    renderList(document.getElementById("top-ten"), [], "best");
+    renderList(document.getElementById("bottom-ten"), [], "worst");
+    return;
+  }
+
+  const best = selectLeaders(quotes, "desc", 10);
+  const worst = selectLeaders(quotes, "asc", 10);
+
+  const topPick =
+    best[0] ||
+    quotes.find((quote) => quote.symbol === "NVDA") ||
+    normalizeQuote(FALLBACK_QUOTES.NVDA);
+  const riskPick =
+    worst[0] ||
+    quotes.find((quote) => quote.symbol === "TSLA") ||
+    normalizeQuote(FALLBACK_QUOTES.TSLA);
+
+  const bestSubline =
+    settingsState.rankingMode === "momentum"
+      ? "AI momentum outlook (next session)"
+      : "Largest daily % gain among large caps (>$5B market cap)";
+  const worstSubline =
+    settingsState.rankingMode === "momentum"
+      ? "AI caution — weakest momentum projection"
+      : "Largest daily % drop among large caps (>$5B market cap)";
+
+  renderHeadline(
+    document.getElementById("feature-body"),
+    topPick,
+    bestSubline
+  );
+  renderHeadline(
+    document.getElementById("worst-body"),
+    riskPick,
+    worstSubline
+  );
+  renderList(document.getElementById("top-ten"), best, "best");
+  renderList(document.getElementById("bottom-ten"), worst, "worst");
+  renderWatchlist(document.getElementById("watchlist-container"), quotes);
+}
+
+function initSettings() {
+  const settingsBtn = document.getElementById("open-settings");
+  const settingsModal = document.getElementById("settings-panel");
+  const backdrop = document.getElementById("settings-backdrop");
+  const closeBtn = document.getElementById("close-settings");
+  const themeRadios = Array.from(document.querySelectorAll('input[name="theme"]'));
+  const rankingRadios = Array.from(document.querySelectorAll('input[name="ranking-mode"]'));
+  const refreshSelect = document.getElementById("refresh-interval");
+  const watchlistToggle = document.getElementById("toggle-watchlist");
+  const highlightToggle = document.getElementById("toggle-highlight");
+  const newTabToggle = document.getElementById("toggle-new-tab");
+
+  if (!settingsBtn || !settingsModal) {
+    applySettings();
+    return;
+  }
+
+  // Prime UI controls with stored settings
+  themeRadios.forEach((radio) => {
+    radio.checked = radio.value === settingsState.theme;
+  });
+  rankingRadios.forEach((radio) => {
+    radio.checked = radio.value === settingsState.rankingMode;
+  });
+  if (refreshSelect) {
+    refreshSelect.value = String(settingsState.refreshMinutes);
+  }
+  if (watchlistToggle) {
+    watchlistToggle.checked = settingsState.showWatchlist;
+  }
+  if (highlightToggle) {
+    highlightToggle.checked = settingsState.highlightFuture;
+  }
+  if (newTabToggle) {
+    newTabToggle.checked = settingsState.openLinksInNewTab;
+  }
+
+  function openModal() {
+    settingsModal.classList.add("visible");
+    backdrop?.classList.add("visible");
+    document.body.classList.add("settings-open");
+    const current = themeRadios.find((radio) => radio.checked);
+    current?.focus({ preventScroll: true });
+  }
+
+  function closeModal() {
+    settingsModal.classList.remove("visible");
+    backdrop?.classList.remove("visible");
+    document.body.classList.remove("settings-open");
+    settingsBtn.focus({ preventScroll: true });
+  }
+
+  settingsBtn.addEventListener("click", openModal);
+  closeBtn?.addEventListener("click", closeModal);
+  backdrop?.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && settingsModal.classList.contains("visible")) {
+      closeModal();
+    }
+  });
+
+  themeRadios.forEach((radio) => {
+    radio.addEventListener("change", () => {
+      settingsState.theme = radio.value;
+      applySettings();
+    });
+  });
+
+  rankingRadios.forEach((radio) => {
+    radio.addEventListener("change", () => {
+      settingsState.rankingMode = radio.value;
+      saveSettings();
+      initDashboard();
+    });
+  });
+
+  refreshSelect?.addEventListener("change", () => {
+    const minutes = Number(refreshSelect.value);
+    settingsState.refreshMinutes = Number.isFinite(minutes) && minutes > 0 ? minutes : DEFAULT_SETTINGS.refreshMinutes;
+    applySettings();
+  });
+
+  watchlistToggle?.addEventListener("change", () => {
+    settingsState.showWatchlist = watchlistToggle.checked;
+    applySettings();
+    if (settingsState.showWatchlist) {
+      initDashboard();
+    }
+  });
+
+  highlightToggle?.addEventListener("change", () => {
+    settingsState.highlightFuture = highlightToggle.checked;
+    applySettings();
+    initDashboard();
+  });
+
+  newTabToggle?.addEventListener("change", () => {
+    settingsState.openLinksInNewTab = newTabToggle.checked;
+    saveSettings();
+  });
+
+  applySettings();
+}
+
+function initSearch() {
+  const form = document.getElementById("search-form");
+  const input = document.getElementById("search-input");
+  const resultsContainer = document.getElementById("results-container");
+  if (!form || !input || !resultsContainer) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const raw = input.value.trim().toUpperCase();
+    if (!raw) return;
+    resultsContainer.innerHTML = `<p class="placeholder">Fetching quote…</p>`;
+    const candidates = raw.includes(".")
+      ? [raw]
+      : MARKET_SUFFIXES.map((suffix) => `${raw}${suffix}`);
+    const quotes = await fetchQuotes(candidates);
+    const first = quotes.map(normalizeQuote).find(Boolean);
+    if (!first) {
+      resultsContainer.innerHTML = `
+        <div class="message error">
+          <strong>Quote unavailable.</strong>
+          <span>We could not find data for <code>${raw}</code>. Try including an exchange suffix like <code>.HK</code> for Hong Kong.</span>
+        </div>`;
+      return;
+    }
+    renderQuoteCards(resultsContainer, [first], "Unable to load quote data right now.");
+  });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  initSettings();
+  initSearch();
+  initDashboard();
+});
