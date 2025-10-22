@@ -311,20 +311,107 @@ function applyTheme(theme) {
 
 }
 
-async function fetchQuotes(symbols) {
-  const query = symbols.join(",");
-  const url = `${API_ENDPOINT}?symbols=${encodeURIComponent(query)}`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Network error");
-    const payload = await response.json();
-    return payload?.quoteResponse?.result ?? [];
-  } catch (error) {
-    console.warn("Falling back to cached data:", error);
-    return symbols.map((ticker) => ({ symbol: ticker, ...FALLBACK_QUOTES[ticker] })).filter(
-      (q) => q.marketCap
-    );
+const GOOGLE_FINANCE_ENDPOINT =
+  window.STOCK_PROXY_URL || "http://127.0.0.1:8080?symbol=";
+
+function parseAbbrevNumber(text) {
+  if (!text) return null;
+  const clean = String(text).trim();
+  if (!clean) return null;
+  const match = clean.match(/([+-]?[0-9]*\.?[0-9]+)\s*([KMBT]?)/i);
+  if (!match) {
+    const parsed = Number(clean.replace(/,/g, ""));
+    return Number.isFinite(parsed) ? parsed : null;
   }
+  const value = parseFloat(match[1]);
+  if (!Number.isFinite(value)) return null;
+  const suffix = match[2].toUpperCase();
+  const map = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 };
+  return value * (map[suffix] || 1);
+}
+
+function buildGoogleQuery(symbol) {
+  const upper = symbol.toUpperCase();
+  if (upper.includes(".")) {
+    const [base, suffix] = upper.split(".");
+    const map = {
+      HK: `HKG:${base}`,
+      L: `LON:${base}`,
+      TO: `TSE:${base}`,
+      SZ: `SHE:${base}`,
+      SS: `SHA:${base}`,
+      PA: `EPA:${base}`,
+      F: `FRA:${base}`,
+      AX: `ASX:${base}`,
+      T: `TYO:${base}`,
+    };
+    if (map[suffix]) return map[suffix];
+    return `${suffix}:${base}`;
+  }
+  return `NASDAQ:${upper}`;
+}
+
+function parseGoogleQuote(symbol, raw, fallback) {
+  if (!raw) return null;
+  const price = parseFloat(raw.l_fix || raw.l || raw.price);
+  const change = parseFloat(raw.c_fix || raw.c || raw.priceChange?.raw);
+  const changePct = parseFloat(raw.cp_fix || raw.cp || raw.priceChangePercent?.raw);
+  let dayLow = null;
+  let dayHigh = null;
+  if (raw.range) {
+    const parts = raw.range.split(" - ");
+    if (parts.length === 2) {
+      dayLow = parseFloat(parts[0].replace(/,/g, ""));
+      dayHigh = parseFloat(parts[1].replace(/,/g, ""));
+    }
+  }
+  const volume = parseAbbrevNumber(raw.vo || raw.volume);
+  const marketCap = parseAbbrevNumber(raw.mc || raw.market_cap);
+  return normalizeQuote({
+    symbol,
+    longName: raw.name || raw.t || fallback?.longName,
+    regularMarketPrice: Number.isFinite(price) ? price : fallback?.regularMarketPrice,
+    regularMarketChange: Number.isFinite(change) ? change : fallback?.regularMarketChange,
+    regularMarketChangePercent: Number.isFinite(changePct)
+      ? changePct
+      : fallback?.regularMarketChangePercent,
+    regularMarketDayLow: Number.isFinite(dayLow)
+      ? dayLow
+      : fallback?.regularMarketDayLow,
+    regularMarketDayHigh: Number.isFinite(dayHigh)
+      ? dayHigh
+      : fallback?.regularMarketDayHigh,
+    fiftyTwoWeekLow: fallback?.fiftyTwoWeekLow,
+    fiftyTwoWeekHigh: fallback?.fiftyTwoWeekHigh,
+    regularMarketVolume: Number.isFinite(volume)
+      ? volume
+      : fallback?.regularMarketVolume,
+    marketCap: Number.isFinite(marketCap) ? marketCap : fallback?.marketCap,
+    exchangeSuffix: fallback?.exchangeSuffix,
+  });
+}
+
+async function fetchGoogleQuote(symbol) {
+  const fallback = FALLBACK_QUOTES[symbol];
+  const query = buildGoogleQuery(symbol);
+  const url = `${GOOGLE_FINANCE_ENDPOINT}${encodeURIComponent(query)}`;
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Google Finance request failed ${response.status}`);
+    const text = await response.text();
+    const jsonText = text.replace(/^\s*\/\//, "");
+    const data = JSON.parse(jsonText);
+    if (!Array.isArray(data) || !data.length) throw new Error("No Google Finance result");
+    return parseGoogleQuote(symbol, data[0], fallback);
+  } catch (error) {
+    console.warn(`Google Finance fetch failed for ${symbol}:`, error);
+    return fallback ? normalizeQuote({ symbol, ...fallback }) : null;
+  }
+}
+
+async function fetchQuotes(symbols) {
+  const results = await Promise.all(symbols.map((symbol) => fetchGoogleQuote(symbol)));
+  return results.filter(Boolean);
 }
 
 function scheduleRefresh() {
@@ -542,13 +629,23 @@ function renderList(container, quotes, type) {
   container.append(fragment);
 }
 
-function renderQuoteCards(container, quotes, emptyMessage = "No data available.") {
+function renderQuoteCards(container, quotes, options = {}) {
   if (!container) return;
+  const { emptyMessage = "No data available.", heading } = options;
+  container.innerHTML = "";
+  if (heading) {
+    const headingEl = document.createElement("p");
+    headingEl.className = "results-heading";
+    headingEl.textContent = heading;
+    container.append(headingEl);
+  }
   if (!quotes.length) {
-    container.innerHTML = `<p class="placeholder">${emptyMessage}</p>`;
+    const empty = document.createElement("p");
+    empty.className = "placeholder";
+    empty.textContent = emptyMessage;
+    container.append(empty);
     return;
   }
-  container.innerHTML = "";
   quotes.forEach((quote) => {
     container.append(createQuoteCard(quote));
   });
@@ -591,6 +688,151 @@ function createQuoteCard(quote) {
   return card;
 }
 
+function findFallbackMatches(query) {
+  const term = query.trim().toLowerCase();
+  if (!term) return [];
+  const cleaned = term.replace(/[^a-z0-9]/gi, "");
+  const entries = Object.entries(FALLBACK_QUOTES);
+  const scored = [];
+
+  for (const [symbol, data] of entries) {
+    const symbolLower = symbol.toLowerCase();
+    const symbolClean = symbolLower.replace(/[^a-z0-9]/gi, "");
+    const nameLower = (data.longName || "").toLowerCase();
+    let score = 0;
+
+    if (symbolLower === term || symbolClean === cleaned) {
+      score = 100;
+    } else if (symbolLower.startsWith(term) || symbolClean.startsWith(cleaned)) {
+      score = 75;
+    } else if (nameLower === term) {
+      score = 60;
+    } else if (nameLower.includes(term)) {
+      score = 40;
+    }
+
+    if (score > 0) {
+      const normalized = normalizeQuote({ symbol, ...data });
+      if (normalized) {
+        scored.push({ quote: normalized, score });
+      }
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score || (b.quote.marketCap || 0) - (a.quote.marketCap || 0));
+  return scored.map((entry) => ({ ...entry.quote, _score: entry.score }));
+}
+
+function suggestBetterPeers(baseQuote, limit = 3) {
+  const entries = Object.entries(FALLBACK_QUOTES)
+    .filter(([symbol]) => symbol !== baseQuote.symbol)
+    .map(([symbol, data]) => {
+      const normalized = normalizeQuote({ symbol, ...data });
+      return normalized ? { quote: normalized, score: getRankingScore(normalized) } : null;
+    })
+    .filter(Boolean);
+
+  const baseScore = getRankingScore(baseQuote);
+  const better = entries
+    .filter((entry) => entry.score > baseScore + 1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  if (better.length < limit) {
+    const remaining = entries
+      .filter((entry) => !better.includes(entry))
+      .sort((a, b) => (b.quote.marketCap || 0) - (a.quote.marketCap || 0))
+      .slice(0, limit - better.length);
+    better.push(...remaining);
+  }
+
+  return better.map((entry) => entry.quote);
+}
+
+function generateAIPrediction(quote, sourceLabel) {
+  const change = quote.regularMarketChangePercent ?? 0;
+  const score = getRankingScore(quote);
+  const marketCap = quote.marketCap || 0;
+  const volume = quote.regularMarketVolume || 0;
+
+  let current = "Stable sideways action.";
+  if (change >= 3) current = "Surging today with strong upward momentum.";
+  else if (change >= 1) current = "Modest gains on the session.";
+  else if (change <= -3) current = "Sharp sell-off in progress.";
+  else if (change <= -1) current = "Trading lower amid mild pressure.";
+
+  let future = "Expect neutral performance as the trend consolidates.";
+  if (score >= 12) future = "Momentum models flag continued strength over the next few sessions.";
+  else if (score >= 5) future = "Indicators lean bullish with moderate follow-through likely.";
+  else if (score <= -12) future = "Models warn of extended weakness; defensive posture advised.";
+  else if (score <= -5) future = "Expect additional softness unless catalysts emerge.";
+
+  const confidence =
+    marketCap >= 5e11
+      ? "High confidence thanks to deep liquidity and ample historical data."
+      : marketCap >= 1e11
+      ? "Moderate confidence; liquidity is healthy."
+      : "Lower confidence due to thinner liquidity in this name.";
+
+  const volumeNote =
+    volume >= 5e7
+      ? "Volume is exceptionally heavy, signalling institutional interest."
+      : volume >= 1e7
+      ? "Volume is healthy, supporting the current move."
+      : "Volume is light, so price swings may be exaggerated.";
+
+  return {
+    current,
+    future,
+    confidence,
+    volumeNote,
+    sourceLabel,
+  };
+}
+
+function renderAIPrediction(container, quote, sourceLabel) {
+  if (!container || !quote) return;
+  const prediction = generateAIPrediction(quote, sourceLabel);
+  const peers = suggestBetterPeers(quote, 3);
+
+  const card = document.createElement("article");
+  card.className = "ai-card";
+  card.innerHTML = `
+    <header>
+      <h3>AI Insight · ${quote.symbol}</h3>
+      <span class="tag">${prediction.sourceLabel}</span>
+    </header>
+    <section>
+      <h4>Current Status</h4>
+      <p>${prediction.current}</p>
+    </section>
+    <section>
+      <h4>Short-term Outlook</h4>
+      <p>${prediction.future}</p>
+    </section>
+    <section class="ai-meta">
+      <div><strong>Confidence</strong><span>${prediction.confidence}</span></div>
+      <div><strong>Volume Note</strong><span>${prediction.volumeNote}</span></div>
+    </section>
+    <section class="ai-peers">
+      <h4>Consider watching</h4>
+      ${
+        peers.length
+          ? `<ul>${peers
+              .map(
+                (peer) =>
+                  `<li><strong>${peer.symbol}</strong> · ${peer.longName ?? "Peer stock"} — AI score ${getRankingScore(
+                    peer
+                  ).toFixed(1)}</li>`
+              )
+              .join("")}</ul>`
+          : "<p>No stronger peers detected in the offline dataset.</p>"
+      }
+    </section>
+  `;
+  container.append(card);
+}
+
 function renderWatchlist(container, quotes) {
   if (!container) return;
   if (!settingsState.showWatchlist) {
@@ -600,7 +842,7 @@ function renderWatchlist(container, quotes) {
   renderQuoteCards(
     container,
     quotes,
-    "Unable to load the watchlist at the moment."
+    { emptyMessage: "Unable to load the watchlist at the moment." }
   );
 }
 
@@ -614,8 +856,7 @@ async function initDashboard() {
       : "";
   }
 
-  const rawQuotes = await fetchQuotes(TRENDING_TICKERS);
-  const quotes = rawQuotes.map(normalizeQuote).filter(Boolean);
+  const quotes = await fetchQuotes(TRENDING_TICKERS);
 
   if (!quotes.length) {
     renderHeadline(
@@ -777,32 +1018,243 @@ function initSearch() {
   const form = document.getElementById("search-form");
   const input = document.getElementById("search-input");
   const resultsContainer = document.getElementById("results-container");
+  const submitBtn = form?.querySelector("button");
   if (!form || !input || !resultsContainer) return;
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const raw = input.value.trim().toUpperCase();
-    if (!raw) return;
-    resultsContainer.innerHTML = `<p class="placeholder">Fetching quote…</p>`;
-    const candidates = raw.includes(".")
-      ? [raw]
-      : MARKET_SUFFIXES.map((suffix) => `${raw}${suffix}`);
-    const quotes = await fetchQuotes(candidates);
-    const first = quotes.map(normalizeQuote).find(Boolean);
-    if (!first) {
-      resultsContainer.innerHTML = `
-        <div class="message error">
-          <strong>Quote unavailable.</strong>
-          <span>We could not find data for <code>${raw}</code>. Try including an exchange suffix like <code>.HK</code> for Hong Kong.</span>
-        </div>`;
+  const runSearch = async () => {
+    const rawInput = input.value.trim();
+    if (!rawInput) return;
+
+    const fallbackMatches = findFallbackMatches(rawInput);
+    const upper = rawInput.toUpperCase();
+    const looksLikeSymbol = /^[A-Z0-9.-]+$/.test(upper.replace(/\s+/g, ""));
+    const liveSymbols = new Set();
+
+    if (looksLikeSymbol) {
+      if (upper.includes(".")) {
+        liveSymbols.add(upper);
+      } else {
+        MARKET_SUFFIXES.forEach((suffix) => liveSymbols.add(`${upper}${suffix}`));
+      }
+    }
+    fallbackMatches.forEach((match) => liveSymbols.add(match.symbol));
+
+    if (!fallbackMatches.length) {
+      resultsContainer.innerHTML = `<p class="placeholder">Searching offline dataset…</p>`;
+    } else {
+      renderQuoteCards(resultsContainer, fallbackMatches.slice(0, 5), {
+        heading:
+          fallbackMatches.length > 1
+            ? "Cached matches (updating with live data…)"
+            : "Cached fallback match (updating with live data…)",
+        emptyMessage: "No fallback data available.",
+      });
+    }
+
+    let liveQuotes = [];
+    if (liveSymbols.size) {
+      try {
+        liveQuotes = await fetchQuotes([...liveSymbols]);
+      } catch (error) {
+        console.warn("Live search fetch failed:", error);
+      }
+    }
+
+    const finalQuotes = liveQuotes.length ? liveQuotes : fallbackMatches;
+    if (finalQuotes.length) {
+      const heading = liveQuotes.length
+        ? finalQuotes.length > 1
+          ? "Closest matches sourced from Google Finance"
+          : "Live quote sourced from Google Finance"
+        : finalQuotes.length > 1
+        ? "Closest matches from cached data"
+        : "Cached fallback data";
+
+      renderQuoteCards(resultsContainer, finalQuotes.slice(0, 5), {
+        heading,
+        emptyMessage: "No data available.",
+      });
+
+      renderAIPrediction(
+        resultsContainer,
+        finalQuotes[0],
+        liveQuotes.length ? "AI heuristic (live proxy)" : "AI heuristic (offline cache)"
+      );
       return;
     }
-    renderQuoteCards(resultsContainer, [first], "Unable to load quote data right now.");
+
+    resultsContainer.innerHTML = `
+      <div class="message error">
+        <strong>Quote unavailable.</strong>
+        <span>No live or cached insight found for <code>${rawInput}</code>. Try a different ticker or add it to the fallback dataset.</span>
+      </div>`;
+  };
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    runSearch();
+  });
+
+  submitBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    runSearch();
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      runSearch();
+    }
   });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+function bootstrap() {
   initSettings();
   initSearch();
   initDashboard();
-});
+  initPullToRefresh();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrap, { once: true });
+} else {
+  bootstrap();
+}
+
+function initPullToRefresh() {
+  const indicator = document.getElementById("refresh-indicator");
+  const main = document.querySelector("main");
+  if (!indicator || !main) return;
+
+  let startY = 0;
+  let isDragging = false;
+  const threshold = 160;
+  const triggerThreshold = 220;
+  const maxPull = 260;
+  let refreshTimeout = null;
+  let wheelAccum = 0;
+  let wheelFinishTimer = null;
+  let refreshActive = false;
+
+  const showPull = (distance) => {
+    const clamped = Math.min(Math.max(distance, 0), maxPull);
+    const translate = clamped / 3;
+    main.style.transform = `translateY(${translate}px)`;
+    indicator.classList.toggle("visible", clamped > threshold);
+  };
+
+  const startRefresh = () => {
+    if (refreshActive) return;
+    refreshActive = true;
+    document.body.classList.add("refresh-active");
+    main.classList.add("refresh-locked");
+    main.style.transform = `translateY(${threshold / 1.6}px)`;
+    indicator.classList.add("visible");
+    clearTimeout(refreshTimeout);
+    refreshTimeout = setTimeout(() => {
+      initDashboard().finally(() => {
+        indicator.classList.remove("visible");
+        main.style.transform = "";
+        document.body.classList.remove("refresh-active");
+        main.classList.remove("refresh-locked");
+        refreshActive = false;
+      });
+    }, 5000);
+  };
+
+  const resetPull = (distance) => {
+    if (refreshActive) return;
+    main.style.transform = "";
+    if (distance > triggerThreshold) {
+      startRefresh();
+    } else {
+      indicator.classList.remove("visible");
+    }
+  };
+
+  const beginDrag = (y) => {
+    if (refreshActive) return;
+    startY = y;
+    isDragging = true;
+    document.body.classList.add("dragging-refresh");
+  };
+
+  const moveDrag = (y) => {
+    if (!isDragging) return;
+    const diff = Math.min(Math.max(y - startY, 0), maxPull);
+    showPull(diff);
+  };
+
+  const endDrag = (y) => {
+    if (!isDragging) return;
+    const diff = y - startY;
+    isDragging = false;
+    document.body.classList.remove("dragging-refresh");
+    resetPull(diff);
+  };
+
+  document.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) return;
+    if (window.scrollY <= 5) beginDrag(event.clientY);
+  });
+
+  document.addEventListener("mousemove", (event) => {
+    if (isDragging) moveDrag(event.clientY);
+  });
+
+  document.addEventListener("mouseup", (event) => {
+    if (isDragging) endDrag(event.clientY);
+  });
+
+  document.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.touches.length !== 1) return;
+      if (window.scrollY <= 5) beginDrag(event.touches[0].clientY);
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (!isDragging) return;
+      if (event.cancelable) event.preventDefault();
+      moveDrag(event.touches[0].clientY);
+    },
+    { passive: false }
+  );
+
+  document.addEventListener("touchend", (event) => {
+    if (!isDragging) return;
+    const clientY = event.changedTouches[0]?.clientY ?? startY;
+    endDrag(clientY);
+  });
+
+  const finishWheel = () => {
+    if (wheelFinishTimer) {
+      clearTimeout(wheelFinishTimer);
+      wheelFinishTimer = null;
+    }
+    if (!wheelAccum) return;
+    const distance = Math.min(wheelAccum, maxPull);
+    resetPull(distance);
+    wheelAccum = 0;
+  };
+
+  window.addEventListener(
+    "wheel",
+    (event) => {
+    if (event.deltaY < 0 && window.scrollY <= 0) {
+      event.preventDefault();
+      wheelAccum = Math.min(wheelAccum + Math.abs(event.deltaY), maxPull);
+      showPull(wheelAccum);
+      if (wheelFinishTimer) clearTimeout(wheelFinishTimer);
+      wheelFinishTimer = setTimeout(finishWheel, 240);
+    } else if (wheelAccum > 0) {
+      finishWheel();
+    }
+  },
+  { passive: false }
+);
+}

@@ -17,9 +17,8 @@
         <input
           type="text"
           id="search-input"
-          placeholder="Search by ticker (e.g. AAPL, NVDA, 0700.HK)"
+          placeholder="NO STOCK INFO"
           autocomplete="off"
-          required
         />
         <button type="submit">Search</button>
       </form>
@@ -27,7 +26,17 @@
         Tip: open this folder with VS Code and use the Live Server extension to
         avoid CORS issues.
       </p>
+      <p class="permission-note">
+        Live quotes may be outdated because of permission/network restrictions. Cached values are shown when live data is blocked.
+        Search has been disabled due to these restrictions.
+      </p>
     </header>
+
+    <div id="refresh-indicator" class="refresh-indicator" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
 
     <main>
       <section class="feature-card best-card">

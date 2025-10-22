@@ -5,11 +5,11 @@ Lightweight client-side dashboard that pulls quote snapshots from Yahoo Finance�
 ## Features
 
 - Featured “best stock right now” card highlighting NVDA with daily stats.
-- Search box for any ticker symbol with automatic market detection (US, Hong Kong, London, Toronto, Sydney, Tokyo, etc.).
+- Search box for any ticker symbol or company name. Attempts a live Google Finance fetch; when blocked, it falls back to cached data and still shows AI guidance.
 - AI-curated #1 best and #1 worst movers plus Top 10 leader/laggard lists with quick Google Finance links.
 - In-app Settings menu to flip between light, dark, peach, tan, or an auto seasonal theme.
 - Trending watchlist tiles for big tech names with quick links to Google Finance.
-- Fallback metrics if the live API call fails, so the UI still renders data offline.
+- Live quotes are pulled from Google Finance (via a CORS-safe proxy) with cached fallbacks if the network blocks the request; when that happens the UI displays a reminder that data may be outdated and the AI module overlays heuristic guidance.
 - Automatic refresh every hour to stay aligned with Yahoo Finance quotes.
 - Optional momentum heuristic that highlights an AI outlook (“Bullish”, “Bearish”, etc.) for the top pick and tables.
 
