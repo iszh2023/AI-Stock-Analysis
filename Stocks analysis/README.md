@@ -30,8 +30,9 @@ Lightweight client-side dashboard that pulls quote snapshots from Yahoo Financeâ
 
 1. Open this folder in VS Code.
 2. Install the **Live Server** extension if you have not already.
-3. Right-click `index.html` and choose **Open with Live Server**.
-4. The dashboard opens in your browser at `http://127.0.0.1:5500` (port may vary).
+3. Start the CORS proxy by running `npm install` (first time) and `node server.js` from the repository root â€” or point `window.STOCK_PROXY_URL` at your deployed Render instance (`https://ai-stock-analysis-6nk5.onrender.com`).
+4. Right-click `index.html` and choose **Open with Live Server**.
+5. The dashboard opens in your browser at `http://127.0.0.1:5500` (port may vary).
 
 > Opening via Live Server avoids CORS errors when requesting Yahoo Finance quotes.
 

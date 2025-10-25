@@ -1,4 +1,9 @@
-const API_ENDPOINT = "https://query1.finance.yahoo.com/v7/finance/quote";
+const DEFAULT_PROXY_BASE = "http://127.0.0.1:3000";
+const RAW_PROXY_BASE =
+  typeof window !== "undefined" && window.STOCK_PROXY_URL
+    ? String(window.STOCK_PROXY_URL)
+    : DEFAULT_PROXY_BASE;
+const PROXY_BASE_URL = RAW_PROXY_BASE.replace(/\/$/, "");
 const LARGE_CAP_THRESHOLD = 5_000_000_000; // $5B
 
 const TRENDING_TICKERS = [
@@ -311,8 +316,8 @@ function applyTheme(theme) {
 
 }
 
-const GOOGLE_FINANCE_ENDPOINT =
-  window.STOCK_PROXY_URL || "http://127.0.0.1:8080?symbol=";
+const GOOGLE_FINANCE_ENDPOINT = `${PROXY_BASE_URL}/google?symbol=`;
+const YAHOO_PROXY_ENDPOINT = `${PROXY_BASE_URL}/yahoo?symbols=`;
 
 function parseAbbrevNumber(text) {
   if (!text) return null;
@@ -392,25 +397,80 @@ function parseGoogleQuote(symbol, raw, fallback) {
 }
 
 async function fetchGoogleQuote(symbol) {
-  const fallback = FALLBACK_QUOTES[symbol];
   const query = buildGoogleQuery(symbol);
   const url = `${GOOGLE_FINANCE_ENDPOINT}${encodeURIComponent(query)}`;
   try {
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, { cache: "no-store", mode: "cors" });
     if (!response.ok) throw new Error(`Google Finance request failed ${response.status}`);
     const text = await response.text();
     const jsonText = text.replace(/^\s*\/\//, "");
     const data = JSON.parse(jsonText);
     if (!Array.isArray(data) || !data.length) throw new Error("No Google Finance result");
+    const fallback = FALLBACK_QUOTES[symbol];
     return parseGoogleQuote(symbol, data[0], fallback);
   } catch (error) {
     console.warn(`Google Finance fetch failed for ${symbol}:`, error);
-    return fallback ? normalizeQuote({ symbol, ...fallback }) : null;
+    return null;
+  }
+}
+
+function getFallbackQuote(symbol) {
+  if (FALLBACK_QUOTES[symbol]) {
+    return normalizeQuote({ symbol, ...FALLBACK_QUOTES[symbol] });
+  }
+  const base = symbol.includes(".") ? symbol.split(".")[0] : null;
+  if (base && FALLBACK_QUOTES[base]) {
+    return normalizeQuote({ symbol: base, ...FALLBACK_QUOTES[base] });
+  }
+  return null;
+}
+
+async function fetchYahooQuote(symbol) {
+  const url = `${YAHOO_PROXY_ENDPOINT}${encodeURIComponent(symbol)}`;
+  try {
+    const response = await fetch(url, { cache: "no-store", mode: "cors" });
+    if (!response.ok) throw new Error(`Yahoo Finance request failed ${response.status}`);
+    const payload = await response.json();
+    const result = payload?.quoteResponse?.result?.[0];
+    if (!result) throw new Error("No Yahoo Finance result");
+    return normalizeQuote({
+      symbol: result.symbol || symbol,
+      longName: result.longName || result.shortName || symbol,
+      regularMarketPrice: result.regularMarketPrice,
+      regularMarketChange: result.regularMarketChange,
+      regularMarketChangePercent: result.regularMarketChangePercent,
+      regularMarketDayLow: result.regularMarketDayLow,
+      regularMarketDayHigh: result.regularMarketDayHigh,
+      fiftyTwoWeekLow: result.fiftyTwoWeekLow,
+      fiftyTwoWeekHigh: result.fiftyTwoWeekHigh,
+      regularMarketVolume: result.regularMarketVolume,
+      marketCap: result.marketCap,
+      exchangeSuffix:
+        result.exchangeSuffix ||
+        result.exchange ||
+        inferExchangeSuffix(result.fullExchangeName || ""),
+    });
+  } catch (error) {
+    console.warn(`Yahoo Finance fetch failed for ${symbol}:`, error);
+    return null;
   }
 }
 
 async function fetchQuotes(symbols) {
-  const results = await Promise.all(symbols.map((symbol) => fetchGoogleQuote(symbol)));
+  const uniqueSymbols = [...new Set(symbols.filter(Boolean))];
+  const results = await Promise.all(
+    uniqueSymbols.map(async (symbol) => {
+      const [googleResult, yahooResult] = await Promise.allSettled([
+        fetchGoogleQuote(symbol),
+        fetchYahooQuote(symbol),
+      ]);
+      const googleQuote =
+        googleResult.status === "fulfilled" && googleResult.value ? googleResult.value : null;
+      const yahooQuote =
+        yahooResult.status === "fulfilled" && yahooResult.value ? yahooResult.value : null;
+      return googleQuote || yahooQuote || getFallbackQuote(symbol);
+    })
+  );
   return results.filter(Boolean);
 }
 
