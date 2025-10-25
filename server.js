@@ -57,6 +57,56 @@ app.get("/yahoo", async (req, res) => {
   }
 });
 
+app.get("/", (req, res) => {
+  res.type("html").send(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>AI Stock Analysis Proxy</title>
+        <style>
+          body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            margin: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+          }
+          main {
+            max-width: 520px;
+            padding: 2.5rem;
+            border-radius: 1.25rem;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 30px 60px rgba(2, 6, 23, 0.45);
+          }
+          h1 {
+            margin-top: 0;
+            font-size: 1.9rem;
+            letter-spacing: -0.03em;
+          }
+          code, a {
+            color: #38bdf8;
+          }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>AI Stock Analysis Proxy</h1>
+          <p>This Render service powers the dashboard&rsquo;s cross-origin requests.</p>
+          <p>Use the JSON APIs directly if needed:</p>
+          <ul>
+            <li><code>/google?symbol=NASDAQ:AAPL</code></li>
+            <li><code>/yahoo?symbols=AAPL,MSFT</code></li>
+          </ul>
+          <p>Point <code>window.STOCK_PROXY_URL</code> at this base URL in the dashboard to enable live quotes.</p>
+        </main>
+      </body>
+    </html>
+  `);
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
 });
