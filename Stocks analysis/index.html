@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="theme-light">
+    <script>
+      window.STOCK_PROXY_URL = "https://ai-stock-analysis-6nk5.onrender.com";
+    </script>
     <header>
       <button id="open-settings" class="settings-btn" type="button">
         Settings ⚙️
@@ -28,7 +31,7 @@
       </p>
       <p class="permission-note">
         Live quotes may be outdated because of permission/network restrictions. Cached values are shown when live data is blocked.
-        Search has been disabled due to these restrictions.
+        Use the hosted proxy at <a href="https://ai-stock-analysis-6nk5.onrender.com" target="_blank" rel="noopener">ai-stock-analysis-6nk5.onrender.com</a> (or run <code>node server.js</code> locally) when finance APIs are blocked directly.
       </p>
     </header>
 
