@@ -1,4 +1,4 @@
-const DEFAULT_PROXY_BASE = "http://127.0.0.1:3000";
+const DEFAULT_PROXY_BASE = "https://ai-stock-analysis-6nk5.onrender.com";
 const RAW_PROXY_BASE =
   typeof window !== "undefined" && window.STOCK_PROXY_URL
     ? String(window.STOCK_PROXY_URL)
